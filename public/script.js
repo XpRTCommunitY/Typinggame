@@ -3,6 +3,7 @@ const socket = io();
 // UI Elements
 const screens = {
     menu: document.getElementById('menu-screen'),
+    difficulty: document.getElementById('difficulty-screen'),
     waiting: document.getElementById('waiting-screen'),
     game: document.getElementById('game-screen'),
     gameover: document.getElementById('gameover-screen')
@@ -28,6 +29,7 @@ const typedPartEl = document.getElementById('typed-part');
 const remainingPartEl = document.getElementById('remaining-part');
 const typingInput = document.getElementById('typing-input');
 const wordDisplayContainer = document.querySelector('.word-display-container');
+const comboCounterEl = document.getElementById('combo-counter');
 
 // Game Over Elements
 const gameoverTitle = document.getElementById('gameover-title');
@@ -59,15 +61,31 @@ const nextWordEl = document.getElementById('next-word');
 const btnComputer = document.getElementById('btn-computer');
 const countdownOverlay = document.getElementById('countdown-overlay');
 
+const btnStartGame = document.getElementById('btn-start-game');
+const btnBackToMenu = document.getElementById('btn-back-to-menu');
+let pendingGameMode = '';
+
 const WORDS = {
     easy: ["attack", "defend", "strike", "dodge", "combo", "block", "jump", "dash", "punch", "kick", "counter", "parry", "smash", "slash", "thrust"],
+    medium: ["Warrior", "Fighter", "Samurai", "Ninja", "Assassin", "Weapon", "Shield", "Armor", "Helmet", "Gauntlet", "Victory", "Defeat", "Battle", "Combat", "Revenge"],
     hard: ["CounterAttack", "ParryStrike", "SmashDown", "SlashThrough", "ThrustForward", "DevastatingBlow", "PerfectGuard", "ShadowStep", "LightningKick", "Uppercut"],
     impossible: ["Combo_Breaker_100x!!!", "D0dg3_Th1s_4tt4ck_N0W~", "P3rf3ct_P4rry_-->_F4t4lity", "A true warrior fights not because he hates!", "The keyboard is mightier than the sword."]
 };
 
+let usedWords = new Set();
+
 function getRandomWord(difficulty = 'easy') {
     const list = WORDS[difficulty] || WORDS.easy;
-    return list[Math.floor(Math.random() * list.length)];
+    if (usedWords.size >= list.length) {
+        usedWords.clear();
+    }
+    
+    let availableWords = list.filter(w => !usedWords.has(w));
+    if (availableWords.length === 0) availableWords = list; // Safety fallback
+    
+    let newWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+    usedWords.add(newWord);
+    return newWord;
 }
 
 // Helper to switch screens
@@ -194,13 +212,12 @@ function setWord(wordArray) {
 }
 
 // Single Player Bot Logic
-function startBotLoop() {
-    clearInterval(botInterval);
-    let botSpeed = 500;
-    if (spDifficulty === 'hard') botSpeed = 200;
-    if (spDifficulty === 'impossible') botSpeed = 50;
+let botTimeout = null;
 
-    botInterval = setInterval(() => {
+function startBotLoop() {
+    clearTimeout(botTimeout);
+    
+    function botType() {
         if (!screens.game.classList.contains('active')) return;
         
         playAnimation(2, 'jab');
@@ -215,13 +232,30 @@ function startBotLoop() {
             
             if (spPlayers[0].health <= 0) {
                 endSinglePlayerGame(2);
+                return; // Stop typing
             } else {
                 currentWordArray.shift();
                 currentWordArray.push(getRandomWord(spDifficulty));
                 setWord(currentWordArray);
             }
         }
-    }, botSpeed);
+        
+        let baseSpeed = 500; // Easy
+        if (spDifficulty === 'medium') baseSpeed = 300;
+        if (spDifficulty === 'hard') baseSpeed = 150;
+        if (spDifficulty === 'impossible') baseSpeed = 50;
+        
+        // Randomize speed slightly (+/- 20%) to feel like human typing
+        let delay = baseSpeed + (Math.random() * baseSpeed * 0.4 - baseSpeed * 0.2);
+        
+        // Add extra delay between words
+        if (botWordProgress === 0) delay += 500; 
+        
+        botTimeout = setTimeout(botType, delay);
+    }
+    
+    // Start bot typing after 1 second
+    botTimeout = setTimeout(botType, 1000);
 }
 
 function handleSinglePlayerTypeProgress() {
@@ -251,7 +285,7 @@ function handleSinglePlayerTypeProgress() {
 }
 
 function endSinglePlayerGame(winnerNum) {
-    clearInterval(botInterval);
+    clearTimeout(botTimeout);
     showScreen('gameover');
     const amIWinner = winnerNum === 1;
     gameoverTitle.textContent = amIWinner ? 'VICTORY!' : 'DEFEAT!';
@@ -295,37 +329,51 @@ function startCountdown(callback) {
 
 // Event Listeners - Menu
 btnComputer.addEventListener('click', () => {
-    isSinglePlayer = true;
-    myPlayerNum = 1;
-    spDifficulty = document.getElementById('difficulty-select').value;
-    const name = inputPlayerName.value.trim() || 'Player 1';
-    
-    spPlayers = [
-        { id: 'p1', name: name, health: 100 },
-        { id: 'bot', name: `Bot (${spDifficulty})`, health: 100 }
-    ];
-    
-    showScreen('game');
-    updateHealth(spPlayers);
-    
-    startTime = Date.now();
-    totalKeystrokes = 0;
-    totalCorrectCharactersTyped = 0;
-    botWordProgress = 0;
-    currentCombo = 0;
-    
-    showFeedback('READY...');
-    startCountdown(() => {
-        setWord([getRandomWord(spDifficulty), getRandomWord(spDifficulty)]);
-        startBotLoop();
-    });
+    pendingGameMode = 'single';
+    showScreen('difficulty');
 });
 
 btnCreate.addEventListener('click', () => {
-    isSinglePlayer = false;
-    const name = inputPlayerName.value.trim() || 'Player 1';
+    pendingGameMode = 'multi';
+    showScreen('difficulty');
+});
+
+btnBackToMenu.addEventListener('click', () => {
+    showScreen('menu');
+});
+
+btnStartGame.addEventListener('click', () => {
     const difficulty = document.getElementById('difficulty-select').value;
-    socket.emit('createRoom', { playerName: name, difficulty });
+    const name = inputPlayerName.value.trim() || 'Player 1';
+    
+    if (pendingGameMode === 'single') {
+        isSinglePlayer = true;
+        myPlayerNum = 1;
+        spDifficulty = difficulty;
+        
+        spPlayers = [
+            { id: 'p1', name: name, health: 100 },
+            { id: 'bot', name: `Bot (${spDifficulty})`, health: 100 }
+        ];
+        
+        showScreen('game');
+        updateHealth(spPlayers);
+        
+        startTime = Date.now();
+        totalKeystrokes = 0;
+        totalCorrectCharactersTyped = 0;
+        botWordProgress = 0;
+        currentCombo = 0;
+        
+        showFeedback('READY...');
+        startCountdown(() => {
+            setWord([getRandomWord(spDifficulty), getRandomWord(spDifficulty)]);
+            startBotLoop();
+        });
+    } else if (pendingGameMode === 'multi') {
+        isSinglePlayer = false;
+        socket.emit('createRoom', { playerName: name, difficulty });
+    }
 });
 
 btnJoin.addEventListener('click', () => {
@@ -351,6 +399,12 @@ document.addEventListener('click', () => {
 
 // Event Listeners - Game
 typingInput.addEventListener('keydown', (e) => {
+    // If input is currently empty and user types space, ignore it
+    if (e.key === ' ' && typingInput.value.trim() === '') {
+        e.preventDefault();
+        return;
+    }
+
     // Count only character keys as keystrokes
     if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
         totalKeystrokes++;
@@ -358,47 +412,20 @@ typingInput.addEventListener('keydown', (e) => {
         // Strict typing check: Is this the correct next character?
         const expectedNextChar = currentWord[typingInput.value.length];
         
-        // If it's not the correct character, and it's not the Spacebar/Enter to complete a word
-        if (e.key !== expectedNextChar && e.key !== 'Enter' && !(e.key === ' ' && typingInput.value === currentWord)) {
+        // Allow if it's the right char, or allow space/enter to fall through to input event if word complete
+        if (e.key !== expectedNextChar && e.key !== 'Enter' && !(e.key === ' ' && typingInput.value.trim() === currentWord)) {
             e.preventDefault(); // Stop the character from typing!
             
             // Mistake! Reset combo and flash red.
             currentCombo = 0;
-            comboCounterEl.style.opacity = 0;
-            comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
+            if (comboCounterEl) {
+                comboCounterEl.style.opacity = 0;
+                comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
+            }
             
             wordDisplayContainer.classList.add('error-bg');
             setTimeout(() => wordDisplayContainer.classList.remove('error-bg'), 300);
             return;
-        }
-    }
-
-    const typedText = typingInput.value;
-    const targetWord = currentWord;
-
-    if (e.key === 'Enter' || (e.key === ' ' && typedText === targetWord)) {
-        e.preventDefault();
-        
-        if (typedText === targetWord) {
-            totalCorrectCharactersTyped += targetWord.length;
-            playAnimation(myPlayerNum, 'head-smash');
-            
-            // Increment Combo
-            currentCombo++;
-            if (currentCombo > 1) {
-                comboCounterEl.textContent = `${currentCombo}x COMBO!`;
-                comboCounterEl.style.opacity = 1;
-                comboCounterEl.style.transform = 'translateX(-50%) scale(1.2)';
-                setTimeout(() => comboCounterEl.style.transform = 'translateX(-50%) scale(1)', 150);
-            }
-
-            if (isSinglePlayer) {
-                handleSinglePlayerTypeProgress();
-            } else {
-                socket.emit('typeProgress', { roomCode: currentRoom, typedText: currentWord });
-            }
-            
-            typingInput.value = '';
         }
     }
 });
@@ -408,9 +435,35 @@ typingInput.addEventListener('input', (e) => {
     if (!isSinglePlayer) socket.emit('keystroke', currentRoom);
     playAnimation(myPlayerNum, 'jab');
 
-    const typedText = e.target.value; // Case-sensitive!
+    const typedText = e.target.value.trim(); // Handle space completion
     const targetWord = currentWord;
     
+    if (typedText === targetWord) {
+        // Word is correctly completed!
+        totalCorrectCharactersTyped += targetWord.length;
+        playAnimation(myPlayerNum, 'head-smash');
+        
+        // Increment Combo
+        currentCombo++;
+        if (comboCounterEl && currentCombo > 1) {
+            comboCounterEl.textContent = `${currentCombo}x COMBO!`;
+            comboCounterEl.style.opacity = 1;
+            comboCounterEl.style.transform = 'translateX(-50%) scale(1.2)';
+            setTimeout(() => comboCounterEl.style.transform = 'translateX(-50%) scale(1)', 150);
+        }
+
+        if (isSinglePlayer) {
+            handleSinglePlayerTypeProgress();
+        } else {
+            socket.emit('typeProgress', { roomCode: currentRoom, typedText: targetWord, combo: currentCombo });
+        }
+        
+        e.target.value = '';
+        typedPartEl.textContent = '';
+        remainingPartEl.textContent = currentWord;
+        return;
+    }
+
     // Validate prefix
     if (targetWord.startsWith(typedText)) {
         typedPartEl.textContent = typedText;
@@ -419,8 +472,10 @@ typingInput.addEventListener('input', (e) => {
     } else {
         // Typing mistake! Reset combo.
         currentCombo = 0;
-        comboCounterEl.style.opacity = 0;
-        comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
+        if (comboCounterEl) {
+            comboCounterEl.style.opacity = 0;
+            comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
+        }
         
         wordDisplayContainer.classList.add('error-bg');
         setTimeout(() => wordDisplayContainer.classList.remove('error-bg'), 300);

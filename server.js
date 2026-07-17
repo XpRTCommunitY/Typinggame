@@ -15,6 +15,11 @@ const WORDS = {
         "block", "jump", "dash", "punch", "kick",
         "counter", "parry", "smash", "slash", "thrust"
     ],
+    medium: [
+        "Warrior", "Fighter", "Samurai", "Ninja", "Assassin",
+        "Weapon", "Shield", "Armor", "Helmet", "Gauntlet",
+        "Victory", "Defeat", "Battle", "Combat", "Revenge"
+    ],
     hard: [
         "CounterAttack", "ParryStrike", "SmashDown", "SlashThrough", "ThrustForward",
         "DevastatingBlow", "PerfectGuard", "ShadowStep", "LightningKick", "Uppercut"
@@ -30,14 +35,22 @@ const WORDS = {
 
 let lastWord = "";
 
-function getRandomWord(difficulty = 'easy') {
+function getRandomWord(difficulty, usedWords) {
     const list = WORDS[difficulty] || WORDS.easy;
-    let newWord = list[Math.floor(Math.random() * list.length)];
-    // Prevent immediate repetition
-    while (newWord === lastWord && list.length > 1) {
-        newWord = list[Math.floor(Math.random() * list.length)];
+    
+    if (usedWords && usedWords.size >= list.length) {
+        usedWords.clear();
     }
-    lastWord = newWord;
+    
+    let availableWords = usedWords ? list.filter(w => !usedWords.has(w)) : list;
+    if (availableWords.length === 0) availableWords = list; // Fallback
+    
+    let newWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+    
+    if (usedWords) {
+        usedWords.add(newWord);
+    }
+    
     return newWord;
 }
 // In-memory state for rooms
@@ -70,7 +83,9 @@ io.on('connection', (socket) => {
             players: [{ id: socket.id, health: 100, name: playerName }],
             status: 'waiting', // waiting, playing, gameover
             currentWord: [],
-            difficulty: difficulty
+            usedWords: new Set(),
+            difficulty: difficulty,
+            lastWordTime: Date.now()
         };
         socket.join(roomCode);
         socket.emit('roomCreated', roomCode);
@@ -92,7 +107,7 @@ io.on('connection', (socket) => {
                 // If 2 players, start game after a short delay
                 if (room.players.length === 2) {
                     room.status = 'playing';
-                    room.currentWord = [getRandomWord(room.difficulty), getRandomWord(room.difficulty)];
+                    room.currentWord = [getRandomWord(room.difficulty, room.usedWords), getRandomWord(room.difficulty, room.usedWords)];
                     setTimeout(() => {
                         io.to(roomCode).emit('gameStart', {
                             word: room.currentWord,
@@ -109,18 +124,35 @@ io.on('connection', (socket) => {
     });
 
     // Handle typing progress
-    socket.on('typeProgress', ({ roomCode, typedText }) => {
+    socket.on('typeProgress', ({ roomCode, typedText, combo }) => {
         const room = rooms[roomCode];
         if (!room || room.status !== 'playing') return;
 
+        // Anti-cheat check: Can't type a word in less than 50ms per character
+        const now = Date.now();
+        const timeTaken = now - room.lastWordTime;
+        const minTimeRequired = room.currentWord[0].length * 50; 
+        
+        if (timeTaken < minTimeRequired) {
+            // Typing too fast, ignore
+            return;
+        }
+
         // Check if word is completed correctly
         if (typedText === room.currentWord[0]) {
+            room.lastWordTime = now;
+            
             // Find opponent and deal damage
             const opponentIndex = room.players.findIndex(p => p.id !== socket.id);
             const attackerIndex = room.players.findIndex(p => p.id === socket.id);
             
             if (opponentIndex !== -1) {
-                room.players[opponentIndex].health -= 10; // 10 damage per word
+                // Apply combo damage
+                let damage = 10;
+                if (combo >= 10) damage = 25;
+                else if (combo >= 3) damage = 15;
+
+                room.players[opponentIndex].health -= damage;
                 
                 if (room.players[opponentIndex].health <= 0) {
                     room.players[opponentIndex].health = 0;
@@ -132,7 +164,7 @@ io.on('connection', (socket) => {
                 } else {
                     // Next round
                     room.currentWord.shift();
-                    room.currentWord.push(getRandomWord(room.difficulty));
+                    room.currentWord.push(getRandomWord(room.difficulty, room.usedWords));
                     io.to(roomCode).emit('roundWon', {
                         winnerId: room.players[attackerIndex].id,
                         newWord: room.currentWord,
@@ -154,7 +186,19 @@ io.on('connection', (socket) => {
         for (const [code, room] of Object.entries(rooms)) {
             const playerIndex = room.players.findIndex(p => p.id === socket.id);
             if (playerIndex !== -1) {
-                io.to(code).emit('playerLeft');
+                if (room.status === 'playing' && room.players.length === 2) {
+                    // The other player wins!
+                    const opponentIndex = playerIndex === 0 ? 1 : 0;
+                    room.players[playerIndex].health = 0;
+                    room.status = 'gameover';
+                    io.to(code).emit('gameOver', {
+                        winner: room.players[opponentIndex].id,
+                        players: room.players,
+                        reason: 'disconnect'
+                    });
+                } else {
+                    io.to(code).emit('playerLeft');
+                }
                 delete rooms[code];
                 break;
             }
