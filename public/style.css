@@ -1,0 +1,580 @@
+:root {
+    --primary: #00f0ff;
+    --secondary: #ff003c;
+    --bg-color: #0f172a;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --glass-bg: rgba(15, 23, 42, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Background */
+.sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    background: linear-gradient(to bottom, #020617, #1e293b);
+    z-index: -2;
+}
+
+.ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: linear-gradient(to top, #0f172a, #334155);
+    z-index: -1;
+    border-top: 2px solid var(--primary);
+    box-shadow: 0 -10px 30px rgba(0, 240, 255, 0.2);
+}
+
+#app {
+    width: 100%;
+    max-width: 1000px;
+    height: 100vh;
+    max-height: 800px;
+    position: relative;
+    padding: 20px;
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    animation: fadeIn 0.3s ease;
+}
+
+.screen.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glass panel */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.main-menu-panel {
+    padding: 60px;
+    min-width: 500px;
+}
+
+/* Typography */
+.glitch {
+    font-size: 4rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    position: relative;
+    text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75),
+                -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+                0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Buttons */
+.btn {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: inherit;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn.primary {
+    background: var(--primary);
+    color: #000;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+}
+
+.btn.primary:hover {
+    box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+    transform: scale(1.05);
+}
+
+.btn.secondary {
+    background: var(--secondary);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(255, 0, 60, 0.4);
+}
+
+.btn.secondary:hover {
+    box-shadow: 0 0 25px rgba(255, 0, 60, 0.6);
+    transform: scale(1.05);
+}
+
+/* Inputs */
+input[type="text"] {
+    padding: 15px 20px;
+    font-size: 1.2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid var(--glass-border);
+    border-radius: 8px;
+    color: white;
+    font-family: inherit;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus {
+    border-color: var(--primary);
+}
+
+/* Menu Actions */
+.menu-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    width: 100%;
+}
+
+.divider {
+    color: var(--text-muted);
+    font-weight: 700;
+    position: relative;
+    width: 100%;
+    text-align: center;
+}
+
+.divider::before, .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: var(--glass-border);
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+.join-section {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+}
+
+.join-section input {
+    flex: 1;
+    text-transform: uppercase;
+}
+
+/* Waiting Room */
+.room-code-display {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 10px;
+    margin: 20px 0;
+    color: var(--primary);
+    text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+}
+
+.pulse-text {
+    animation: pulse 1.5s infinite;
+    color: var(--text-muted);
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+/* Game Header */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 20px;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.player-info {
+    width: 35%;
+}
+
+.player-info.right {
+    text-align: right;
+}
+
+.player-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+    display: inline-block;
+    color: var(--primary);
+}
+
+.player-info.right .player-label {
+    color: var(--secondary);
+}
+
+.health-bar-container {
+    width: 100%;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--glass-border);
+}
+
+.health-bar {
+    height: 100%;
+    background: var(--primary);
+    transition: width 0.3s ease-out;
+}
+
+.player-info.right .health-bar {
+    background: var(--secondary);
+    float: right;
+}
+
+.vs {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Battlefield */
+.battlefield {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Center them so margin spacing works perfectly */
+    align-items: flex-end;
+    padding-bottom: 50px;
+    position: relative;
+    height: 400px;
+    margin-top: 50px;
+}
+
+.combat-text {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 3rem;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.combat-text.show {
+    opacity: 1;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: translateX(-50%) scale(0.5); }
+    100% { transform: translateX(-50%) scale(1); }
+}
+
+@keyframes idleBreathing {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(0.97) translateY(2px); }
+}
+
+/* Stickman CSS */
+.stickman {
+    position: relative; /* Back to relative for flex layout */
+    z-index: 5;
+    width: 180px;
+    height: 360px;
+    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    margin: 0 60px; /* Space between them */
+    margin-bottom: 20px;
+    transform-origin: bottom center; /* Keep feet planted when rotating! */
+    animation: idleBreathing 2s ease-in-out infinite;
+}
+
+.stickman.right {
+    transform: scaleX(-1);
+}
+
+/* Drawing the stickman with CSS - 1.5x Size */
+.stickman .head {
+    width: 90px;
+    height: 90px;
+    border: 9px solid black;
+    border-radius: 50%;
+    background: white;
+    position: absolute;
+    left: 45px;
+    top: 0;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.stickman .head::after {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 0;
+    width: 100%;
+    height: 9px;
+    background: black; /* The goggles line */
+}
+
+.stickman .torso {
+    width: 9px;
+    height: 135px;
+    background: black;
+    position: absolute;
+    left: 85px;
+    top: 90px;
+    transform-origin: top center;
+    border-radius: 9px;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.stickman .arm {
+    width: 9px;
+    height: 135px;
+    background: black;
+    position: absolute;
+    top: 105px;
+    transform-origin: top center;
+    border-radius: 9px;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.stickman .left-arm {
+    left: 85px;
+    transform: rotate(30deg); /* Left arm points down and left */
+}
+
+.stickman .right-arm {
+    left: 85px;
+    transform: rotate(-60deg); /* Right arm points UP and right (holding sword) */
+}
+
+/* Glowing Sword attached to the right arm */
+.stickman .right-arm::after {
+    content: '';
+    position: absolute;
+    top: 135px; /* Attached at the end of the arm */
+    left: -3px;
+    width: 15px;
+    height: 195px;
+    background: #e2e8f0;
+    border-radius: 9px;
+    transform-origin: top center;
+    transform: rotate(-20deg); /* Pointing up and forward relative to the arm */
+    box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary); /* Neon glow */
+}
+
+/* Red glow for P2 sword */
+#stickman-p2 .right-arm::after {
+    box-shadow: 0 0 20px var(--secondary), 0 0 40px var(--secondary);
+}
+
+.stickman .leg {
+    width: 9px;
+    height: 135px;
+    background: black;
+    position: absolute;
+    top: 225px;
+    transform-origin: top center;
+    border-radius: 9px;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.stickman .left-leg {
+    left: 85px;
+    transform: rotate(30deg);
+}
+
+.stickman .right-leg {
+    left: 85px;
+    transform: rotate(-30deg);
+}
+
+/* Health bars for multiplayer */
+.health-container {
+    font-family: 'Arial', sans-serif;
+    color: white;
+    margin-top: 10px;
+}
+.hp-bar-bg {
+    width: 100%;
+    height: 15px;
+    background: #333;
+    border: 2px solid black;
+    margin-bottom: 5px;
+}
+.hp-bar {
+    height: 100%;
+    background: var(--primary);
+    width: 100%;
+    transition: width 0.2s;
+}
+.player-info.right .hp-bar {
+    background: var(--secondary);
+}
+
+/* Animations */
+.stickman.jab {
+    /* Step in close and lean forward */
+    transform: translateX(25px) rotate(10deg);
+}
+.stickman.jab .left-leg { transform: rotate(50deg); }
+.stickman.jab .right-leg { transform: rotate(-10deg); }
+.stickman.jab .right-arm {
+    /* Quick sword slash down */
+    transform: rotate(-110deg);
+}
+
+.stickman.right.jab {
+    transform: scaleX(-1) translateX(25px) rotate(10deg);
+}
+
+.stickman.attack {
+    /* Big jump and lean for combo finish */
+    transform: translateY(-40px) translateX(60px) rotate(25deg);
+}
+.stickman.attack .left-leg { transform: rotate(40deg); }
+.stickman.attack .right-leg { transform: rotate(-50deg); }
+.stickman.attack .left-arm { transform: rotate(140deg); }
+.stickman.attack .right-arm {
+    /* Massive sword swing down */
+    transform: rotate(-160deg);
+}
+.stickman.attack .right-arm::after {
+    /* Sword trail effect */
+    height: 250px;
+    box-shadow: 0 0 40px var(--primary), 0 0 80px var(--primary);
+}
+#stickman-p2.attack .right-arm::after {
+    box-shadow: 0 0 40px var(--secondary), 0 0 80px var(--secondary);
+}
+
+.stickman.right.attack {
+    transform: scaleX(-1) translateY(-40px) translateX(60px) rotate(25deg);
+}
+
+.stickman.hurt {
+    /* Crouch / dodge back */
+    transform: translateY(20px) translateX(-30px) rotate(-20deg);
+    filter: drop-shadow(0 0 20px var(--secondary));
+}
+.stickman.hurt .left-leg { transform: rotate(80deg); }
+.stickman.hurt .right-leg { transform: rotate(-80deg); }
+.stickman.hurt .right-arm { transform: rotate(10deg); }
+
+.stickman.right.hurt {
+    transform: scaleX(-1) translateY(20px) translateX(-30px) rotate(-20deg);
+}
+
+/* Typing Area */
+.typing-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative; /* Changed from absolute */
+    padding-bottom: 40px;
+    z-index: 10;
+}
+
+.word-display-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 20px 40px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.word-display {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-family: monospace;
+}
+
+.typed {
+    color: var(--primary);
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.remaining {
+    color: var(--text-main);
+}
+
+.error-bg {
+    animation: shake 0.3s;
+    border-color: var(--secondary) !important;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+#typing-input {
+    width: 80%;
+    max-width: 600px;
+    font-size: 1.5rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.message {
+    margin-top: 20px;
+    color: var(--secondary);
+    font-weight: bold;
+}
