@@ -40,11 +40,35 @@ const statAccuracy = document.getElementById('stat-accuracy');
 let currentRoom = '';
 let myPlayerNum = 0;
 let currentWord = '';
+let currentWordArray = [];
 
 // Stats
 let startTime = 0;
 let totalKeystrokes = 0;
 let totalCorrectCharactersTyped = 0;
+
+// Single Player State
+let isSinglePlayer = false;
+let botInterval = null;
+let botWordProgress = 0;
+let spPlayers = [];
+let spDifficulty = 'easy';
+let currentCombo = 0;
+
+const nextWordEl = document.getElementById('next-word');
+const btnComputer = document.getElementById('btn-computer');
+const countdownOverlay = document.getElementById('countdown-overlay');
+
+const WORDS = {
+    easy: ["attack", "defend", "strike", "dodge", "combo", "block", "jump", "dash", "punch", "kick", "counter", "parry", "smash", "slash", "thrust"],
+    hard: ["CounterAttack", "ParryStrike", "SmashDown", "SlashThrough", "ThrustForward", "DevastatingBlow", "PerfectGuard", "ShadowStep", "LightningKick", "Uppercut"],
+    impossible: ["Combo_Breaker_100x!!!", "D0dg3_Th1s_4tt4ck_N0W~", "P3rf3ct_P4rry_-->_F4t4lity", "A true warrior fights not because he hates!", "The keyboard is mightier than the sword."]
+};
+
+function getRandomWord(difficulty = 'easy') {
+    const list = WORDS[difficulty] || WORDS.easy;
+    return list[Math.floor(Math.random() * list.length)];
+}
 
 // Helper to switch screens
 function showScreen(screenName) {
@@ -54,32 +78,84 @@ function showScreen(screenName) {
 
 function showFeedback(text, isError = false) {
     combatFeedback.textContent = text;
-    combatFeedback.style.color = isError ? 'var(--secondary)' : 'white';
+    
+    // Add cool comic book styling for feedback!
+    if (text === 'BAM!' || text === 'CRITICAL!') {
+        combatFeedback.style.color = '#fbbf24';
+        combatFeedback.style.fontSize = '5rem';
+        combatFeedback.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 20 - 10}deg)`;
+    } else {
+        combatFeedback.style.color = isError ? 'var(--secondary)' : 'white';
+        combatFeedback.style.fontSize = '3.5rem';
+        combatFeedback.style.transform = 'translate(-50%, -50%)';
+    }
+
     combatFeedback.classList.add('show');
+    
+    // Shake screen on hit
+    if (!isError && text !== 'READY...') {
+        document.body.classList.add('shake-screen');
+        setTimeout(() => document.body.classList.remove('shake-screen'), 300);
+    }
+
     setTimeout(() => combatFeedback.classList.remove('show'), 1000);
 }
 
 // Helper to play animations
-function playAnimation(playerNum, animClass) {
+function playAnimation(playerNum, animType) {
     const stickman = document.getElementById(`stickman-p${playerNum}`);
+    if (!stickman) return;
+
+    // Check if we're currently doing a big move that shouldn't be interrupted
+    const isCurrentlyDoingBigMove = stickman.classList.contains('head-smash') || stickman.classList.contains('hurt') || stickman.classList.contains('knockback');
+    const isRequestingBigMove = animType === 'head-smash' || animType === 'hurt' || animType === 'knockback' || animType === 'attack';
     
-    // Remove class to reset
-    stickman.classList.remove(animClass);
-    
-    // Force DOM reflow to restart transition
-    void stickman.offsetWidth;
-    
-    // Add class back
-    stickman.classList.add(animClass);
-    
+    // Don't interrupt a big move with a small typing move
+    if (isCurrentlyDoingBigMove && !isRequestingBigMove) return;
+
+    // Remove any existing timeout
     if (stickman.dataset.animTimeout) {
         clearTimeout(parseInt(stickman.dataset.animTimeout));
     }
+
+    // All possible animation classes
+    const allAnims = ['jab', 'low-kick', 'high-slash', 'attack', 'dash-strike', 'spin-attack', 'hurt', 'knockback', 'head-smash'];
     
+    let animClass = animType;
+    let duration = 300;
+
+    // Randomize the moves!
+    if (animType === 'jab') {
+        const jabs = ['jab', 'low-kick', 'high-slash'];
+        
+        // Pick a different move from the current one to ensure smooth transition
+        let currentClass = allAnims.find(c => stickman.classList.contains(c));
+        let availableJabs = jabs.filter(j => j !== currentClass);
+        if (availableJabs.length === 0) availableJabs = jabs;
+        
+        animClass = availableJabs[Math.floor(Math.random() * availableJabs.length)];
+        duration = 400; // Stay in stance for 400ms after last keypress
+    } else if (animType === 'attack') {
+        const attacks = ['attack', 'dash-strike', 'spin-attack'];
+        animClass = attacks[Math.floor(Math.random() * attacks.length)];
+        duration = 600;
+    } else if (animType === 'hurt') {
+        animClass = Math.random() > 0.5 ? 'hurt' : 'knockback';
+        duration = 500;
+    } else if (animType === 'head-smash') {
+        animClass = 'head-smash';
+        duration = 800;
+    }
+
+    // Apply the new class smoothly (no forced reflow)
+    stickman.classList.remove(...allAnims);
+    stickman.classList.add(animClass);
+
+    // Set timeout to return to idle ONLY after duration
     const timeout = setTimeout(() => {
-        stickman.classList.remove(animClass);
-    }, 150);
-    
+        stickman.classList.remove(...allAnims);
+    }, duration);
+
     stickman.dataset.animTimeout = timeout;
 }
 
@@ -102,22 +178,158 @@ function updateHealth(players) {
     }
 }
 
-function setWord(word) {
-    currentWord = word;
+function setWord(wordArray) {
+    currentWordArray = wordArray;
+    currentWord = wordArray[0];
     typedPartEl.textContent = '';
-    remainingPartEl.textContent = word;
+    remainingPartEl.textContent = currentWord;
+    if (wordArray.length > 1) {
+        nextWordEl.textContent = wordArray[1];
+    } else {
+        nextWordEl.textContent = '';
+    }
     typingInput.value = '';
     typingInput.disabled = false;
     typingInput.focus();
 }
 
+// Single Player Bot Logic
+function startBotLoop() {
+    clearInterval(botInterval);
+    let botSpeed = 500;
+    if (spDifficulty === 'hard') botSpeed = 200;
+    if (spDifficulty === 'impossible') botSpeed = 50;
+
+    botInterval = setInterval(() => {
+        if (!screens.game.classList.contains('active')) return;
+        
+        playAnimation(2, 'jab');
+        botWordProgress++;
+        
+        if (botWordProgress >= currentWordArray[0].length) {
+            // Bot finished word!
+            botWordProgress = 0;
+            playAnimation(2, 'head-smash');
+            spPlayers[0].health -= 10;
+            updateHealth(spPlayers);
+            
+            if (spPlayers[0].health <= 0) {
+                endSinglePlayerGame(2);
+            } else {
+                currentWordArray.shift();
+                currentWordArray.push(getRandomWord(spDifficulty));
+                setWord(currentWordArray);
+            }
+        }
+    }, botSpeed);
+}
+
+function handleSinglePlayerTypeProgress() {
+    botWordProgress = 0; // Reset bot progress on player success
+    
+    // Bonus damage for high combos!
+    let damage = 10;
+    if (currentCombo >= 3) damage = 15;
+    if (currentCombo >= 10) damage = 25;
+    
+    spPlayers[1].health -= damage;
+    updateHealth(spPlayers);
+    
+    if (currentCombo >= 3) {
+        showFeedback('CRITICAL!');
+    } else {
+        showFeedback('BAM!');
+    }
+    
+    if (spPlayers[1].health <= 0) {
+        endSinglePlayerGame(1);
+    } else {
+        currentWordArray.shift();
+        currentWordArray.push(getRandomWord(spDifficulty));
+        setWord(currentWordArray);
+    }
+}
+
+function endSinglePlayerGame(winnerNum) {
+    clearInterval(botInterval);
+    showScreen('gameover');
+    const amIWinner = winnerNum === 1;
+    gameoverTitle.textContent = amIWinner ? 'VICTORY!' : 'DEFEAT!';
+    gameoverTitle.style.color = amIWinner ? 'var(--primary)' : 'var(--secondary)';
+    gameoverMessage.textContent = amIWinner ? 'You proved your typing skills against the bot.' : 'The bot was too fast!';
+    
+    const timeElapsedInMinutes = (Date.now() - startTime) / 60000;
+    let wpm = 0;
+    let accuracy = 0;
+    if (timeElapsedInMinutes > 0) {
+        wpm = Math.round((totalCorrectCharactersTyped / 5) / timeElapsedInMinutes);
+    }
+    if (totalKeystrokes > 0) {
+        accuracy = Math.round((totalCorrectCharactersTyped / totalKeystrokes) * 100);
+        if (accuracy > 100) accuracy = 100;
+    }
+    
+    statWpm.textContent = `Speed: ${wpm} WPM`;
+    statAccuracy.textContent = `Accuracy: ${accuracy}%`;
+}
+
+function startCountdown(callback) {
+    typingInput.disabled = true;
+    countdownOverlay.style.opacity = 1;
+    let count = 3;
+    countdownOverlay.textContent = count;
+    
+    const countInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+            countdownOverlay.textContent = count;
+        } else if (count === 0) {
+            countdownOverlay.textContent = 'START!';
+        } else {
+            clearInterval(countInterval);
+            countdownOverlay.style.opacity = 0;
+            callback();
+        }
+    }, 1000);
+}
+
 // Event Listeners - Menu
-btnCreate.addEventListener('click', () => {
+btnComputer.addEventListener('click', () => {
+    isSinglePlayer = true;
+    myPlayerNum = 1;
+    spDifficulty = document.getElementById('difficulty-select').value;
     const name = inputPlayerName.value.trim() || 'Player 1';
-    socket.emit('createRoom', name);
+    
+    spPlayers = [
+        { id: 'p1', name: name, health: 100 },
+        { id: 'bot', name: `Bot (${spDifficulty})`, health: 100 }
+    ];
+    
+    showScreen('game');
+    updateHealth(spPlayers);
+    
+    startTime = Date.now();
+    totalKeystrokes = 0;
+    totalCorrectCharactersTyped = 0;
+    botWordProgress = 0;
+    currentCombo = 0;
+    
+    showFeedback('READY...');
+    startCountdown(() => {
+        setWord([getRandomWord(spDifficulty), getRandomWord(spDifficulty)]);
+        startBotLoop();
+    });
+});
+
+btnCreate.addEventListener('click', () => {
+    isSinglePlayer = false;
+    const name = inputPlayerName.value.trim() || 'Player 1';
+    const difficulty = document.getElementById('difficulty-select').value;
+    socket.emit('createRoom', { playerName: name, difficulty });
 });
 
 btnJoin.addEventListener('click', () => {
+    isSinglePlayer = false;
     const code = inputRoomCode.value.trim().toUpperCase();
     const name = inputPlayerName.value.trim() || 'Player 2';
     if (code.length > 0) {
@@ -140,34 +352,76 @@ document.addEventListener('click', () => {
 // Event Listeners - Game
 typingInput.addEventListener('keydown', (e) => {
     // Count only character keys as keystrokes
-    if (e.key.length === 1) {
+    if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
         totalKeystrokes++;
+        
+        // Strict typing check: Is this the correct next character?
+        const expectedNextChar = currentWord[typingInput.value.length];
+        
+        // If it's not the correct character, and it's not the Spacebar/Enter to complete a word
+        if (e.key !== expectedNextChar && e.key !== 'Enter' && !(e.key === ' ' && typingInput.value === currentWord)) {
+            e.preventDefault(); // Stop the character from typing!
+            
+            // Mistake! Reset combo and flash red.
+            currentCombo = 0;
+            comboCounterEl.style.opacity = 0;
+            comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
+            
+            wordDisplayContainer.classList.add('error-bg');
+            setTimeout(() => wordDisplayContainer.classList.remove('error-bg'), 300);
+            return;
+        }
+    }
+
+    const typedText = typingInput.value;
+    const targetWord = currentWord;
+
+    if (e.key === 'Enter' || (e.key === ' ' && typedText === targetWord)) {
+        e.preventDefault();
+        
+        if (typedText === targetWord) {
+            totalCorrectCharactersTyped += targetWord.length;
+            playAnimation(myPlayerNum, 'head-smash');
+            
+            // Increment Combo
+            currentCombo++;
+            if (currentCombo > 1) {
+                comboCounterEl.textContent = `${currentCombo}x COMBO!`;
+                comboCounterEl.style.opacity = 1;
+                comboCounterEl.style.transform = 'translateX(-50%) scale(1.2)';
+                setTimeout(() => comboCounterEl.style.transform = 'translateX(-50%) scale(1)', 150);
+            }
+
+            if (isSinglePlayer) {
+                handleSinglePlayerTypeProgress();
+            } else {
+                socket.emit('typeProgress', { roomCode: currentRoom, typedText: currentWord });
+            }
+            
+            typingInput.value = '';
+        }
     }
 });
 
 typingInput.addEventListener('input', (e) => {
     // Animate and send keystroke on EVERY key press (correct or wrong)
-    socket.emit('keystroke', currentRoom);
+    if (!isSinglePlayer) socket.emit('keystroke', currentRoom);
     playAnimation(myPlayerNum, 'jab');
 
-    const typedText = e.target.value.toLowerCase();
-    const targetWord = currentWord.toLowerCase();
+    const typedText = e.target.value; // Case-sensitive!
+    const targetWord = currentWord;
     
     // Validate prefix
     if (targetWord.startsWith(typedText)) {
-        // Correct typing
-        typedPartEl.textContent = currentWord.slice(0, typedText.length);
-        remainingPartEl.textContent = currentWord.slice(typedText.length);
+        typedPartEl.textContent = typedText;
+        remainingPartEl.textContent = targetWord.substring(typedText.length);
         wordDisplayContainer.classList.remove('error-bg');
-
-        // Emit progress if we completed the word
-        if (typedText === targetWord) {
-            totalCorrectCharactersTyped += targetWord.length;
-            socket.emit('typeProgress', { roomCode: currentRoom, typedText: currentWord }); // Send original case
-            typingInput.value = '';
-        }
     } else {
-        // Wrong typing
+        // Typing mistake! Reset combo.
+        currentCombo = 0;
+        comboCounterEl.style.opacity = 0;
+        comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
+        
         wordDisplayContainer.classList.add('error-bg');
         setTimeout(() => wordDisplayContainer.classList.remove('error-bg'), 300);
         e.target.value = e.target.value.slice(0, -1);
@@ -193,17 +447,16 @@ socket.on('playerAssigned', (num) => {
 socket.on('gameStart', (data) => {
     showScreen('game');
     updateHealth(data.players);
-    
+
     // Reset stats
     startTime = Date.now();
     totalKeystrokes = 0;
     totalCorrectCharactersTyped = 0;
 
     showFeedback('READY...');
-    setTimeout(() => {
-        showFeedback('FIGHT!');
+    startCountdown(() => {
         setWord(data.word);
-    }, 1500);
+    });
 });
 
 socket.on('opponentKeystroke', () => {
@@ -213,26 +466,23 @@ socket.on('opponentKeystroke', () => {
 
 socket.on('roundWon', (data) => {
     updateHealth(data.players);
+    const winnerNum = data.players.findIndex(p => p.id === data.winnerId) + 1;
     
-    const amIAttacker = socket.id === data.winnerId;
-    const attackerNum = data.players[0].id === data.winnerId ? 1 : 2;
-    const defenderNum = attackerNum === 1 ? 2 : 1;
-
-    // Fighting animations
-    playAnimation(attackerNum, 'attack');
-    setTimeout(() => playAnimation(defenderNum, 'hurt'), 100);
-
-    if (amIAttacker) {
-        showFeedback('COMBO!', false);
+    // Animate attack
+    playAnimation(winnerNum, 'head-smash');
+    
+    // Animate hurt on loser
+    const loserNum = winnerNum === 1 ? 2 : 1;
+    playAnimation(loserNum, 'hurt');
+    
+    // Show feedback
+    if (winnerNum === myPlayerNum) {
+        showFeedback('BAM!');
     } else {
         showFeedback('OUCH!', true);
     }
 
-    typingInput.disabled = true;
-
-    setTimeout(() => {
-        setWord(data.newWord);
-    }, 1000);
+    setWord(data.newWord);
 });
 
 socket.on('gameOver', (data) => {

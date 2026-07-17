@@ -49,21 +49,22 @@ body {
 }
 
 #app {
-    width: 100%;
-    max-width: 1000px;
+    width: 100vw;
     height: 100vh;
-    max-height: 800px;
     position: relative;
-    padding: 20px;
+    overflow: hidden;
 }
 
 .screen {
     display: none;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: 100%;
-    animation: fadeIn 0.3s ease;
 }
 
 .screen.active {
@@ -289,12 +290,18 @@ input[type="text"]:focus {
 /* Battlefield */
 .battlefield {
     flex: 1;
-    width: 100%;
+    width: 100vw;
     display: flex;
     justify-content: center; /* Center them so margin spacing works perfectly */
     align-items: flex-end;
     padding-bottom: 50px;
     position: relative;
+    background-image: url('bg.png');
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    /* Optional: subtle shadow/overlay if needed inside the arena */
+    box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
     height: 400px;
     margin-top: 50px;
 }
@@ -323,8 +330,13 @@ input[type="text"]:focus {
 }
 
 @keyframes idleBreathing {
-    0%, 100% { transform: scaleY(1); }
-    50% { transform: scaleY(0.97) translateY(2px); }
+    0%, 100% { transform: scaleY(1) translateY(0); }
+    50% { transform: scaleY(0.95) translateY(5px); }
+}
+
+@keyframes idleBreathingRight {
+    0%, 100% { transform: scaleX(-1) scaleY(1) translateY(0); }
+    50% { transform: scaleX(-1) scaleY(0.95) translateY(5px); }
 }
 
 /* Stickman CSS */
@@ -335,13 +347,14 @@ input[type="text"]:focus {
     height: 360px;
     transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     margin: 0 60px; /* Space between them */
-    margin-bottom: 20px;
+    margin-bottom: -40px; /* Aligned feet with the glowing ground line */
     transform-origin: bottom center; /* Keep feet planted when rotating! */
     animation: idleBreathing 2s ease-in-out infinite;
 }
 
 .stickman.right {
     transform: scaleX(-1);
+    animation: idleBreathingRight 2s ease-in-out infinite;
 }
 
 /* Drawing the stickman with CSS - 1.5x Size */
@@ -350,67 +363,101 @@ input[type="text"]:focus {
     height: 90px;
     border: 9px solid black;
     border-radius: 50%;
-    background: white;
+    background: radial-gradient(circle at 30% 30%, #ffffff, #d1d5db);
     position: absolute;
-    left: 45px;
+    left: 36px; /* Centered horizontally (180 - 108) / 2 */
     top: 0;
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.stickman .head::after {
-    content: '';
+.stickman .head .eye {
+    width: 12px;
+    height: 12px;
+    background: black;
+    border-radius: 50%;
     position: absolute;
-    top: 30px;
-    left: 0;
-    width: 100%;
-    height: 9px;
-    background: black; /* The goggles line */
+    top: 25px;
+}
+.stickman .head .eye.left { display: none; } /* Profile view, hide left eye */
+.stickman .head .eye.right { right: 10px; } /* Single eye on the right side */
+
+.stickman .head .nose {
+    width: 8px;
+    height: 12px;
+    background: black;
+    border-radius: 4px;
+    position: absolute;
+    top: 38px;
+    right: -4px; /* Sticking out on the front edge */
+    left: auto;
 }
 
-.stickman .torso {
-    width: 9px;
-    height: 135px;
-    background: black;
+.stickman .head .mouth {
+    width: 20px;
+    height: 10px;
+    border-bottom: 5px solid black;
+    border-radius: 50%;
     position: absolute;
-    left: 85px;
+    top: 55px;
+    right: 5px; /* Smirk on the right side */
+    left: auto;
+    transform: rotate(10deg);
+}
+
+.stickman .head .ear {
+    width: 15px;
+    height: 20px;
+    border: 6px solid black;
+    border-radius: 50%;
+    position: absolute;
+    top: 35px;
+}
+.stickman .head .ear.left { left: -18px; border-right: none; } /* Ear on the back of the head */
+.stickman .head .ear.right { display: none; } /* Hide front ear */
+
+.stickman .torso {
+    width: 18px;
+    height: 135px;
+    background: #ffffff;
+    box-shadow: inset -5px -2px 10px rgba(0,0,0,0.3), 0 0 0 3px #111, 0 5px 15px rgba(0,0,0,0.8);
+    position: absolute;
+    left: 81px; /* Centered horizontally (180 - 18) / 2 */
     top: 90px;
     transform-origin: top center;
     border-radius: 9px;
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .stickman .arm {
-    width: 9px;
+    width: 18px;
     height: 135px;
-    background: black;
+    background: #ffffff;
+    box-shadow: inset -5px -2px 10px rgba(0,0,0,0.3), 0 0 0 3px #111, 0 5px 15px rgba(0,0,0,0.8);
     position: absolute;
     top: 105px;
     transform-origin: top center;
     border-radius: 9px;
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .stickman .left-arm {
-    left: 85px;
-    transform: rotate(30deg); /* Left arm points down and left */
+    left: 81px;
+    transform: rotate(30deg); /* Back hand points down and away */
+    filter: brightness(0.6); /* Darker back arm for depth */
 }
 
-.stickman .right-arm {
-    left: 85px;
-    transform: rotate(-60deg); /* Right arm points UP and right (holding sword) */
-}
-
-/* Glowing Sword attached to the right arm */
+/* Glowing Sword attached to the right arm (front hand) */
 .stickman .right-arm::after {
     content: '';
     position: absolute;
     top: 135px; /* Attached at the end of the arm */
-    left: -3px;
+    left: 1.5px; /* Centered on 18px arm (18-15)/2 = 1.5 */
     width: 15px;
     height: 195px;
     background: #e2e8f0;
     border-radius: 9px;
     transform-origin: top center;
-    transform: rotate(-20deg); /* Pointing up and forward relative to the arm */
+    /* Point sword forward */
+    transform: rotate(-50deg); 
     box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary); /* Neon glow */
 }
 
@@ -419,24 +466,32 @@ input[type="text"]:focus {
     box-shadow: 0 0 20px var(--secondary), 0 0 40px var(--secondary);
 }
 
+.stickman .right-arm {
+    left: 81px;
+    transform: rotate(-40deg); /* Front hand raised slightly for balance */
+    z-index: 10;
+}
+
 .stickman .leg {
-    width: 9px;
+    width: 18px;
     height: 135px;
-    background: black;
+    background: #ffffff;
+    box-shadow: inset -5px -2px 10px rgba(0,0,0,0.3), 0 0 0 3px #111, 0 5px 15px rgba(0,0,0,0.8);
     position: absolute;
     top: 225px;
     transform-origin: top center;
     border-radius: 9px;
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .stickman .left-leg {
-    left: 85px;
+    left: 81px;
     transform: rotate(30deg);
+    filter: brightness(0.6); /* Darker back leg for depth */
 }
 
 .stickman .right-leg {
-    left: 85px;
+    left: 81px;
     transform: rotate(-30deg);
 }
 
@@ -464,32 +519,45 @@ input[type="text"]:focus {
 }
 
 /* Animations */
+.stickman.jab,
+.stickman.low-kick,
+.stickman.high-slash,
+.stickman.attack,
+.stickman.dash-strike,
+.stickman.spin-attack,
+.stickman.hurt,
+.stickman.knockback,
+.stickman.head-smash {
+    animation: none !important; /* Stop idle breathing while attacking */
+}
+
 .stickman.jab {
-    /* Step in close and lean forward */
-    transform: translateX(25px) rotate(10deg);
+    /* Small jump forward and lean */
+    transform: translateY(-30px) translateX(80px) rotate(15deg);
 }
 .stickman.jab .left-leg { transform: rotate(50deg); }
 .stickman.jab .right-leg { transform: rotate(-10deg); }
 .stickman.jab .right-arm {
-    /* Quick sword slash down */
-    transform: rotate(-110deg);
+    /* Quick sword slash down. */
+    transform: rotate(-100deg);
 }
+.stickman.jab .left-arm { transform: rotate(20deg); } /* Back hand moves back a bit for balance */
 
 .stickman.right.jab {
-    transform: scaleX(-1) translateX(25px) rotate(10deg);
+    transform: scaleX(-1) translateY(-30px) translateX(80px) rotate(15deg);
 }
 
 .stickman.attack {
     /* Big jump and lean for combo finish */
-    transform: translateY(-40px) translateX(60px) rotate(25deg);
+    transform: translateY(-80px) translateX(150px) rotate(25deg);
 }
 .stickman.attack .left-leg { transform: rotate(40deg); }
 .stickman.attack .right-leg { transform: rotate(-50deg); }
-.stickman.attack .left-arm { transform: rotate(140deg); }
 .stickman.attack .right-arm {
-    /* Massive sword swing down */
-    transform: rotate(-160deg);
+    /* Massive sword swing down with front hand */
+    transform: rotate(-120deg);
 }
+.stickman.attack .left-arm { transform: rotate(60deg); } /* Back arm swings back */
 .stickman.attack .right-arm::after {
     /* Sword trail effect */
     height: 250px;
@@ -500,58 +568,150 @@ input[type="text"]:focus {
 }
 
 .stickman.right.attack {
-    transform: scaleX(-1) translateY(-40px) translateX(60px) rotate(25deg);
+    transform: scaleX(-1) translateY(-80px) translateX(150px) rotate(25deg);
 }
 
 .stickman.hurt {
     /* Crouch / dodge back */
-    transform: translateY(20px) translateX(-30px) rotate(-20deg);
+    transform: translateY(20px) translateX(-60px) rotate(-20deg);
     filter: drop-shadow(0 0 20px var(--secondary));
 }
 .stickman.hurt .left-leg { transform: rotate(80deg); }
 .stickman.hurt .right-leg { transform: rotate(-80deg); }
-.stickman.hurt .right-arm { transform: rotate(10deg); }
+.stickman.hurt .right-arm { 
+    /* Sword drops defensively in front (towards opponent) */
+    transform: rotate(10deg); 
+}
 
 .stickman.right.hurt {
-    transform: scaleX(-1) translateY(20px) translateX(-30px) rotate(-20deg);
+    transform: scaleX(-1) translateY(20px) translateX(-60px) rotate(-20deg);
+}
+
+/* --- New Dynamic Combat Moves --- */
+/* 1. Low Kick (fast typing move) */
+.stickman.low-kick {
+    transform: translateX(100px) rotate(10deg);
+}
+.stickman.low-kick .left-leg { transform: rotate(80deg); }
+.stickman.low-kick .right-leg { transform: rotate(-20deg); }
+.stickman.low-kick .right-arm { transform: rotate(10deg); } /* Sword points up defensively */
+.stickman.right.low-kick {
+    transform: scaleX(-1) translateX(100px) rotate(10deg);
+}
+
+/* 2. High Slash (fast typing move) */
+.stickman.high-slash {
+    transform: translateY(-60px) translateX(90px);
+}
+.stickman.high-slash .right-arm { transform: rotate(-130deg); } /* Overhead swing */
+.stickman.high-slash .left-arm { transform: rotate(40deg); }
+.stickman.high-slash .left-leg { transform: rotate(20deg); }
+.stickman.high-slash .right-leg { transform: rotate(-10deg); }
+.stickman.right.high-slash {
+    transform: scaleX(-1) translateY(-60px) translateX(90px);
+}
+
+/* 3. Dash Strike (big move) */
+.stickman.dash-strike {
+    transform: translateX(250px) rotate(40deg) skewX(-20deg);
+}
+.stickman.dash-strike .right-arm { transform: rotate(-100deg); }
+.stickman.dash-strike .right-arm::after { 
+    height: 300px; 
+    box-shadow: 0 0 50px var(--primary), 0 0 100px var(--primary);
+}
+#stickman-p2.dash-strike .right-arm::after { 
+    box-shadow: 0 0 50px var(--secondary), 0 0 100px var(--secondary);
+}
+.stickman.dash-strike .left-leg { transform: rotate(60deg); }
+.stickman.dash-strike .right-leg { transform: rotate(-60deg); }
+.stickman.right.dash-strike {
+    transform: scaleX(-1) translateX(250px) rotate(40deg) skewX(-20deg);
+}
+
+/* 4. Spin Attack (big move) */
+.stickman.spin-attack {
+    transform: translateY(-120px) translateX(180px) rotate(360deg);
+}
+.stickman.spin-attack .right-arm { transform: rotate(-90deg); }
+.stickman.spin-attack .right-arm::after { height: 250px; }
+.stickman.spin-attack .left-leg { transform: rotate(40deg); }
+.stickman.spin-attack .right-leg { transform: rotate(40deg); }
+.stickman.right.spin-attack {
+    transform: scaleX(-1) translateY(-120px) translateX(180px) rotate(-360deg);
+}
+
+/* 5. Knockback (heavy hit reaction) */
+.stickman.knockback {
+    transform: translateY(-80px) translateX(-180px) rotate(-70deg);
+    filter: drop-shadow(0 0 30px var(--secondary));
+}
+.stickman.knockback .left-leg { transform: rotate(120deg); }
+.stickman.knockback .right-leg { transform: rotate(-10deg); }
+.stickman.knockback .right-arm { transform: rotate(80deg); }
+.stickman.right.knockback {
+    transform: scaleX(-1) translateY(-80px) translateX(-180px) rotate(-70deg);
+}
+
+/* 6. Head Smash (Combo finish / Word clear) */
+.stickman.head-smash {
+    transform: translateY(-180px) translateX(120px) rotate(15deg);
+}
+.stickman.head-smash .left-leg { transform: rotate(80deg); }
+.stickman.head-smash .right-leg { transform: rotate(-50deg); }
+.stickman.head-smash .right-arm { transform: rotate(180deg); }
+.stickman.head-smash .right-arm::after { transform: rotate(-30deg); }
+
+.stickman.right.head-smash {
+    transform: scaleX(-1) translateY(-180px) translateX(120px) rotate(15deg);
 }
 
 /* Typing Area */
-.typing-area {
+.typing-interface {
     width: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 20px;
+    z-index: 10;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+}
+
+.typing-area {
+    width: 95%; /* Make it almost full width of the screen */
+    max-width: 1200px; /* Increased max-width for long sentences */
     display: flex;
     flex-direction: column;
     align-items: center;
-    position: relative; /* Changed from absolute */
-    padding-bottom: 40px;
     z-index: 10;
 }
 
 .word-display-container {
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 2px solid var(--glass-border);
-    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.6);
     padding: 20px 40px;
+    border-radius: 12px;
     margin-bottom: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    width: 100%;
+    text-align: center;
 }
 
 .word-display {
-    font-size: 2.5rem;
+    font-size: 2.2rem; /* Adjusted size to fit long lines */
     font-weight: 700;
     letter-spacing: 2px;
-    font-family: monospace;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .typed {
     color: var(--primary);
-    text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+    text-shadow: 0 0 10px var(--primary);
 }
 
 .remaining {
-    color: var(--text-main);
+    color: #cbd5e1;
 }
 
 .error-bg {
@@ -565,16 +725,42 @@ input[type="text"]:focus {
     75% { transform: translateX(5px); }
 }
 
-#typing-input {
-    width: 80%;
-    max-width: 600px;
-    font-size: 1.5rem;
-    text-align: center;
-    background: rgba(0, 0, 0, 0.5);
+@keyframes knockbackOpponent {
+    0% { transform: translateX(0) rotate(0deg); }
+    50% { transform: translateX(30px) rotate(-15deg); }
+    100% { transform: translateX(0) rotate(0deg); }
 }
 
+#typing-input {
+    width: 100%; /* Full width of the container */
+    max-width: 800px;
+    padding: 20px;
+    font-size: 1.8rem;
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    text-align: center;
+    outline: none;
+    transition: all 0.3s;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: 2px;
+}
 .message {
     margin-top: 20px;
     color: var(--secondary);
     font-weight: bold;
 }
+
+.shake-screen {
+    animation: screenShake 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes screenShake {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    10%, 90% { transform: translate3d(-5px, 5px, 0); }
+    20%, 80% { transform: translate3d(10px, -5px, 0); }
+    30%, 50%, 70% { transform: translate3d(-10px, 10px, 0); }
+    40%, 60% { transform: translate3d(10px, -10px, 0); }
+}
+

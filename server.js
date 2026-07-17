@@ -9,28 +9,33 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Simple words list for the typing game
-const WORDS = [
-    "keyboard warrior", "stickman combo", "xprtcommunity", "meme master",
-    "fast fingers", "epic battle", "multiplayer madness", "type to survive",
-    "ultimate gamer", "combo breaker", "smash the keys", "typing speed",
-    "local network", "game over", "winner takes all", "critical strike",
-    "headshot", "ninja reflexes", "sword slash", "dodge and weave",
-    "power move", "hyper speed", "shadow strike", "fatal blow",
-    "victory royale", "unbeatable", "unstoppable force", "typing god",
-    "keyboard ninja", "wpm champion", "final stand", "boss fight",
-    "rapid fire", "precision aim", "lightning fast", "action hero",
-    "virtual arena", "cyber combat", "keyboard smash", "flawless victory",
-    "blood sweat tears", "no mercy", "finish him", "keyboard breaker"
-];
+const WORDS = {
+    easy: [
+        "attack", "defend", "strike", "dodge", "combo", 
+        "block", "jump", "dash", "punch", "kick",
+        "counter", "parry", "smash", "slash", "thrust"
+    ],
+    hard: [
+        "CounterAttack", "ParryStrike", "SmashDown", "SlashThrough", "ThrustForward",
+        "DevastatingBlow", "PerfectGuard", "ShadowStep", "LightningKick", "Uppercut"
+    ],
+    impossible: [
+        "Combo_Breaker_100x!!!",
+        "D0dg3_Th1s_4tt4ck_N0W~",
+        "P3rf3ct_P4rry_-->_F4t4lity",
+        "A true warrior fights not because he hates!",
+        "The keyboard is mightier than the sword."
+    ]
+};
 
 let lastWord = "";
 
-function getRandomWord() {
-    let newWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+function getRandomWord(difficulty = 'easy') {
+    const list = WORDS[difficulty] || WORDS.easy;
+    let newWord = list[Math.floor(Math.random() * list.length)];
     // Prevent immediate repetition
-    while (newWord === lastWord && WORDS.length > 1) {
-        newWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+    while (newWord === lastWord && list.length > 1) {
+        newWord = list[Math.floor(Math.random() * list.length)];
     }
     lastWord = newWord;
     return newWord;
@@ -49,12 +54,23 @@ io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
     // Create Room
-    socket.on('createRoom', (playerName) => {
+    socket.on('createRoom', (data) => {
+        let playerName = 'Player 1';
+        let difficulty = 'easy';
+        
+        if (typeof data === 'string') {
+            playerName = data;
+        } else if (data) {
+            playerName = data.playerName || 'Player 1';
+            difficulty = data.difficulty || 'easy';
+        }
+
         const roomCode = generateRoomCode();
         rooms[roomCode] = {
-            players: [{ id: socket.id, health: 100, name: playerName || 'Player 1' }],
+            players: [{ id: socket.id, health: 100, name: playerName }],
             status: 'waiting', // waiting, playing, gameover
-            currentWord: ''
+            currentWord: [],
+            difficulty: difficulty
         };
         socket.join(roomCode);
         socket.emit('roomCreated', roomCode);
@@ -76,7 +92,7 @@ io.on('connection', (socket) => {
                 // If 2 players, start game after a short delay
                 if (room.players.length === 2) {
                     room.status = 'playing';
-                    room.currentWord = getRandomWord();
+                    room.currentWord = [getRandomWord(room.difficulty), getRandomWord(room.difficulty)];
                     setTimeout(() => {
                         io.to(roomCode).emit('gameStart', {
                             word: room.currentWord,
@@ -98,13 +114,13 @@ io.on('connection', (socket) => {
         if (!room || room.status !== 'playing') return;
 
         // Check if word is completed correctly
-        if (typedText === room.currentWord) {
+        if (typedText === room.currentWord[0]) {
             // Find opponent and deal damage
             const opponentIndex = room.players.findIndex(p => p.id !== socket.id);
             const attackerIndex = room.players.findIndex(p => p.id === socket.id);
             
             if (opponentIndex !== -1) {
-                room.players[opponentIndex].health -= 20; // 20 damage per word
+                room.players[opponentIndex].health -= 10; // 10 damage per word
                 
                 if (room.players[opponentIndex].health <= 0) {
                     room.players[opponentIndex].health = 0;
@@ -115,7 +131,8 @@ io.on('connection', (socket) => {
                     });
                 } else {
                     // Next round
-                    room.currentWord = getRandomWord();
+                    room.currentWord.shift();
+                    room.currentWord.push(getRandomWord(room.difficulty));
                     io.to(roomCode).emit('roundWon', {
                         winnerId: room.players[attackerIndex].id,
                         newWord: room.currentWord,
