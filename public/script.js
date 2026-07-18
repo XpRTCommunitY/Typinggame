@@ -81,6 +81,7 @@ function getNoiseBuffer() {
 
 function playSwishSound() {
     if (!effectsEnabled) return;
+    if (navigator.vibrate) navigator.vibrate(50);
     initAudio();
     const noise = audioCtx.createBufferSource();
     noise.buffer = getNoiseBuffer();
@@ -103,6 +104,7 @@ function playSwishSound() {
 
 function playHitSound() {
     if (!effectsEnabled) return;
+    if (navigator.vibrate) navigator.vibrate(100);
     initAudio();
     
     // Low punch
@@ -137,6 +139,7 @@ function playHitSound() {
 
 function playErrorSound() {
     if (!effectsEnabled) return;
+    if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
     initAudio();
     const osc1 = audioCtx.createOscillator();
     const osc2 = audioCtx.createOscillator();
@@ -209,7 +212,7 @@ function getRandomWord(difficulty = 'easy') {
 // --- Sparks / Particles ---
 function createBlood(playerNum) {
     const battlefield = document.querySelector('.battlefield');
-    if (!battlefield || !effectsEnabled) return;
+    if (!battlefield) return;
     
     const numDrops = Math.floor(Math.random() * 6) + 10;
     for (let i = 0; i < numDrops; i++) {

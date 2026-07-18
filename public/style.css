@@ -80,6 +80,8 @@ body.in-game {
     padding: 40px;
     text-align: center;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    position: relative;
+    z-index: 10;
 }
 
 .main-menu-panel {
@@ -386,7 +388,7 @@ input[type="text"]:focus {
     z-index: 5;
     width: 180px;
     height: 360px;
-    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     margin: 0 60px; /* Space between them */
     margin-bottom: -40px; /* Aligned feet with the glowing ground line */
     transform-origin: bottom center; /* Keep feet planted when rotating! */
@@ -991,36 +993,34 @@ body.in-game .side-info {
     }
 }
 
- / *   A d   S l o t s   * / 
- . a d - s l o t   { 
-         b a c k g r o u n d :   r g b a ( 2 5 5 ,   2 5 5 ,   2 5 5 ,   0 . 0 5 ) ; 
-         b o r d e r :   1 p x   d a s h e d   r g b a ( 2 5 5 ,   2 5 5 ,   2 5 5 ,   0 . 2 ) ; 
-         c o l o r :   r g b a ( 2 5 5 ,   2 5 5 ,   2 5 5 ,   0 . 4 ) ; 
-         d i s p l a y :   f l e x ; 
-         j u s t i f y - c o n t e n t :   c e n t e r ; 
-         a l i g n - i t e m s :   c e n t e r ; 
-         t e x t - t r a n s f o r m :   u p p e r c a s e ; 
-         f o n t - s i z e :   0 . 8 r e m ; 
-         l e t t e r - s p a c i n g :   1 p x ; 
-         m a r g i n :   1 5 p x   a u t o ; 
-         b o r d e r - r a d i u s :   4 p x ; 
- } 
- 
- . a d - l e a d e r b o a r d   { 
-         w i d t h :   7 2 8 p x ; 
-         m a x - w i d t h :   1 0 0 % ; 
-         h e i g h t :   9 0 p x ; 
- } 
- 
- . a d - r e c t a n g l e   { 
-         w i d t h :   3 0 0 p x ; 
-         h e i g h t :   2 5 0 p x ; 
- } 
- 
- . a d - b a n n e r - s m a l l   { 
-         w i d t h :   1 0 0 % ; 
-         m a x - w i d t h :   4 6 8 p x ; 
-         h e i g h t :   6 0 p x ; 
- } 
-  
- 
+/* Ad Slots */
+.ad-slot {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    margin: 15px auto;
+    border-radius: 4px;
+}
+
+.ad-leaderboard {
+    width: 728px;
+    max-width: 100%;
+    height: 90px;
+}
+
+.ad-rectangle {
+    width: 300px;
+    height: 250px;
+}
+
+.ad-banner-small {
+    width: 100%;
+    max-width: 468px;
+    height: 60px;
+}
