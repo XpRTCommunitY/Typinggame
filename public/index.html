@@ -40,15 +40,12 @@
         <!-- Main Menu -->
         <div id="menu-screen" class="screen active">
             <!-- onrendadd (Leaderboard Ad) -->
-            <div style="text-align:center; margin:15px auto; width:100%; max-width:728px;">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-8194832550891838"
-                     data-ad-slot="7464656073"
-                     data-ad-format="auto"
-                     data-full-width-responsive="true"></ins>
+            <div
+                style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); text-align:center; width:100%; max-width:728px; z-index: 100;">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8194832550891838"
+                    data-ad-slot="7464656073" data-ad-format="auto" data-full-width-responsive="true"></ins>
                 <script>
-                     (adsbygoogle = window.adsbygoogle || []).push({});
+                    (adsbygoogle = window.adsbygoogle || []).push({});
                 </script>
             </div>
 
@@ -68,7 +65,7 @@
                     <div style="margin-bottom: 20px; text-align: center;">
                         <label
                             style="color: white; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" id="effects-toggle" checked style="width: 18px; height: 18px;">
+                            <input type="checkbox" id="effects-toggle" style="width: 18px; height: 18px;">
                             Enable Vibration & Sound Effects
                         </label>
                     </div>
@@ -124,24 +121,21 @@
 
         <!-- Waiting Room -->
         <div id="waiting-screen" class="screen">
+            <!-- onrendadd (Rectangle Ad) -->
+            <div
+                style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); text-align:center; width:100%; max-width:300px; z-index: 100;">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8194832550891838"
+                    data-ad-slot="7464656073" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
             <div class="glass-panel">
                 <h2>Room Created!</h2>
                 <p>Share this code with your opponent:</p>
                 <div class="room-code-display" id="display-room-code">------</div>
                 <p class="pulse-text">Waiting for opponent to join...</p>
-
-                <!-- onrendadd (Rectangle Ad) -->
-                <div style="text-align:center; margin:20px auto; max-width:300px;">
-                    <ins class="adsbygoogle"
-                         style="display:block"
-                         data-ad-client="ca-pub-8194832550891838"
-                         data-ad-slot="7464656073"
-                         data-ad-format="auto"
-                         data-full-width-responsive="true"></ins>
-                    <script>
-                         (adsbygoogle = window.adsbygoogle || []).push({});
-                    </script>
-                </div>
             </div>
         </div>
 
@@ -201,7 +195,7 @@
 
                     <!-- Top controls container -->
                     <div id="mobile-top-controls" class="top-controls"
-                        style="position: absolute; top: 302px; right: 20px; z-index: 20; display: flex; gap: 10px;">
+                        style="position: absolute; top: 175px; right: 20px; z-index: 20; display: flex; gap: 10px;">
                         <button id="btn-pause-game" class="btn secondary"
                             style="padding: 10px 15px; font-size: 0.9rem; background: rgba(0,0,0,0.5);">Pause</button>
                         <button id="btn-leave-game" class="btn secondary"
@@ -245,17 +239,13 @@
                                 placeholder="Type here..." disabled>
                         </div>
                     </div>
-                    
+
                     <!-- onrendadd (Banner Ad) -->
-                    <div style="text-align:center; margin-top:20px; width:100%;">
-                        <ins class="adsbygoogle"
-                             style="display:block"
-                             data-ad-client="ca-pub-8194832550891838"
-                             data-ad-slot="7464656073"
-                             data-ad-format="auto"
-                             data-full-width-responsive="true"></ins>
+                    <div style="text-align:center; margin-top:auto; width:100%; max-height: 90px; overflow: hidden;">
+                        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8194832550891838"
+                            data-ad-slot="7464656073" data-ad-format="auto" data-full-width-responsive="true"></ins>
                         <script>
-                             (adsbygoogle = window.adsbygoogle || []).push({});
+                            (adsbygoogle = window.adsbygoogle || []).push({});
                         </script>
                     </div>
                 </div>
@@ -264,22 +254,19 @@
 
         <!-- Game Over Screen -->
         <div id="gameover-screen" class="screen">
+            <!-- onrendadd (Rectangle Ad) -->
+            <div
+                style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); text-align:center; width:100%; max-width:300px; z-index: 100;">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-8194832550891838"
+                    data-ad-slot="7464656073" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
             <div class="glass-panel">
                 <h1 id="gameover-title">Game Over</h1>
                 <p id="gameover-message"></p>
-                
-                <!-- onrendadd (Rectangle Ad) -->
-                <div style="text-align:center; margin:15px auto; max-width:300px;">
-                    <ins class="adsbygoogle"
-                         style="display:block"
-                         data-ad-client="ca-pub-8194832550891838"
-                         data-ad-slot="7464656073"
-                         data-ad-format="auto"
-                         data-full-width-responsive="true"></ins>
-                    <script>
-                         (adsbygoogle = window.adsbygoogle || []).push({});
-                    </script>
-                </div>
 
                 <div class="stats-box"
                     style="margin: 20px 0; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">

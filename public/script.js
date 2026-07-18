@@ -51,8 +51,9 @@ let currentWordArray = [];
 
 // Effects & Sound
 const effectsToggle = document.getElementById('effects-toggle');
-let effectsEnabled = true;
+let effectsEnabled = false;
 if (effectsToggle) {
+    effectsEnabled = effectsToggle.checked;
     effectsToggle.addEventListener('change', (e) => {
         effectsEnabled = e.target.checked;
     });
