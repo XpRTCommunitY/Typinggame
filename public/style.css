@@ -323,6 +323,29 @@ input[type="text"]:focus {
     position: relative;
 }
 
+.battle-ground {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 120px; 
+    background: #0a0a0a;
+    border-top: 3px solid var(--primary);
+    box-shadow: 0 -5px 25px rgba(0, 240, 255, 0.4);
+    z-index: 2;
+}
+
+.battle-ground::after {
+    content: '';
+    position: absolute;
+    top: 40px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background-image: linear-gradient(90deg, rgba(255,255,255,0.3) 50%, transparent 50%);
+    background-size: 80px 100%;
+}
+
 .combat-text {
     position: absolute;
     top: 30%;
@@ -585,8 +608,8 @@ input[type="text"]:focus {
 
 .stickman.hurt {
     /* Crouch / dodge back */
-    transform: translateY(20px) translateX(-60px) rotate(-20deg);
-    filter: drop-shadow(0 0 20px var(--secondary));
+    transform: translateY(10px) translateX(-80px) rotate(-30deg);
+    filter: drop-shadow(0 0 30px var(--secondary));
 }
 .stickman.hurt .left-leg { transform: rotate(80deg); }
 .stickman.hurt .right-leg { transform: rotate(-80deg); }
@@ -655,7 +678,7 @@ input[type="text"]:focus {
 
 /* 5. Knockback (heavy hit reaction) */
 .stickman.knockback {
-    transform: translateY(-80px) translateX(-180px) rotate(-70deg);
+    transform: translateY(-50px) translateX(-200px) rotate(-60deg);
     filter: drop-shadow(0 0 30px var(--secondary));
 }
 .stickman.knockback .left-leg { transform: rotate(120deg); }

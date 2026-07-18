@@ -126,7 +126,13 @@
 
             <div class="split-layout">
                 <div class="split-left">
+                    <!-- Top Word Display -->
+                    <div id="top-word-display" style="position: absolute; top: 40px; right: 30px; font-size: 3.5rem; font-weight: 900; z-index: 20; font-family: 'Courier New', Courier, monospace; background: rgba(0,0,0,0.6); padding: 10px 30px; border-radius: 15px; border: 2px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(5px); text-align: center; display: block;">
+                        <span id="top-typed-part" class="typed"></span><span id="top-remaining-part" class="remaining">Wait...</span>
+                    </div>
+
                     <div class="battlefield">
+                        <div class="battle-ground"></div>
                         <!-- Combo Counter -->
                         <div id="combo-counter"
                             style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%) scale(0); font-size: 3rem; font-weight: 900; color: #fbbf24; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); background: rgba(0, 0, 0, 0.7); padding: 10px 40px; border-radius: 50px; border: 3px solid #fbbf24; box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); opacity: 0; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 15;">

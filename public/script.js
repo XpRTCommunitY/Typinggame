@@ -31,6 +31,9 @@ const typingInput = document.getElementById('typing-input');
 const wordDisplayContainer = document.querySelector('.word-display-container');
 const comboCounterEl = document.getElementById('combo-counter');
 
+const topTypedPartEl = document.getElementById('top-typed-part');
+const topRemainingPartEl = document.getElementById('top-remaining-part');
+
 // Game Over Elements
 const gameoverTitle = document.getElementById('gameover-title');
 const gameoverMessage = document.getElementById('gameover-message');
@@ -203,6 +206,44 @@ function getRandomWord(difficulty = 'easy') {
 }
 
 // --- Sparks / Particles ---
+function createBlood(playerNum) {
+    const battlefield = document.querySelector('.battlefield');
+    if (!battlefield || !effectsEnabled) return;
+    
+    const numDrops = Math.floor(Math.random() * 6) + 10;
+    for (let i = 0; i < numDrops; i++) {
+        const drop = document.createElement('div');
+        drop.style.position = 'absolute';
+        const size = Math.random() * 12 + 4;
+        drop.style.width = size + 'px';
+        drop.style.height = size + 'px';
+        drop.style.backgroundColor = '#ef4444';
+        drop.style.boxShadow = '0 0 10px #ef4444, 0 0 20px #991b1b';
+        drop.style.borderRadius = '50%';
+        drop.style.zIndex = '55';
+        
+        const baseX = playerNum === 1 ? '40%' : '60%';
+        drop.style.left = baseX;
+        drop.style.top = '50%'; 
+        
+        const dir = playerNum === 1 ? -1 : 1;
+        const vx = (Math.random() * 400 * dir) + (100 * dir);
+        const vy = (Math.random() * -400); // Fly upwards mostly
+        
+        battlefield.appendChild(drop);
+        
+        const animation = drop.animate([
+            { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+            { transform: `translate(${vx}px, ${vy}px) scale(0)`, opacity: 0 }
+        ], {
+            duration: 600 + Math.random() * 300,
+            easing: 'cubic-bezier(0.1, 0.8, 0.3, 1)'
+        });
+        
+        animation.onfinish = () => drop.remove();
+    }
+}
+
 function createSparks(playerNum) {
     const battlefield = document.querySelector('.battlefield');
     if (!battlefield || !effectsEnabled) return;
@@ -366,6 +407,9 @@ function updateHealth(players) {
 function setWord(wordArray) {
     // Prevent resetting typing progress if the word is the same (used for lag compensation updates)
     if (currentWord && currentWord === wordArray[0]) {
+        if (wordArray.length > 1) {
+            nextWordEl.textContent = wordArray[1];
+        }
         return;
     }
 
@@ -373,6 +417,8 @@ function setWord(wordArray) {
     currentWord = wordArray[0];
     typedPartEl.textContent = '';
     remainingPartEl.textContent = currentWord;
+    if (topTypedPartEl) topTypedPartEl.textContent = '';
+    if (topRemainingPartEl) topRemainingPartEl.textContent = currentWord;
     if (wordArray.length > 1) {
         nextWordEl.textContent = wordArray[1];
     } else {
@@ -414,6 +460,8 @@ function startBotLoop() {
             // Bot finished word!
             botWordProgress = 0;
             playAnimation(2, 'head-smash');
+            playAnimation(1, 'hurt');
+            createBlood(1);
             
             // Dynamic damage calculation for bot based on chosen time
             let botBaseDamage = Math.max(0.1, 300 / spTimeLimit);
@@ -451,6 +499,9 @@ function startBotLoop() {
 
 function handleSinglePlayerTypeProgress() {
     botWordProgress = 0; // Reset bot progress on player success
+    
+    playAnimation(2, 'hurt');
+    createBlood(2);
     
     // Dynamic damage based on chosen time limit
     let baseDamage = Math.max(0.1, 300 / spTimeLimit);
@@ -780,11 +831,20 @@ typingInput.addEventListener('input', (e) => {
             handleSinglePlayerTypeProgress();
         } else {
             socket.emit('typeProgress', { roomCode: currentRoom, typedText: targetWord, combo: currentCombo });
+            
+            // Optimistic update for multiplayer to prevent word lag
+            if (currentWordArray.length > 1) {
+                currentWordArray.shift(); // Remove completed word
+                setWord(currentWordArray); // This sets up the UI for the next word immediately
+            } else {
+                // Fallback if no next word is queued
+                e.target.value = '';
+                typedPartEl.textContent = '';
+                remainingPartEl.textContent = currentWord;
+                if (topTypedPartEl) topTypedPartEl.textContent = '';
+                if (topRemainingPartEl) topRemainingPartEl.textContent = currentWord;
+            }
         }
-        
-        e.target.value = '';
-        typedPartEl.textContent = '';
-        remainingPartEl.textContent = currentWord;
         return;
     }
 
@@ -792,6 +852,8 @@ typingInput.addEventListener('input', (e) => {
     if (targetWord.startsWith(typedText)) {
         typedPartEl.textContent = typedText;
         remainingPartEl.textContent = targetWord.substring(typedText.length);
+        if (topTypedPartEl) topTypedPartEl.textContent = typedText;
+        if (topRemainingPartEl) topRemainingPartEl.textContent = targetWord.substring(typedText.length);
         wordDisplayContainer.classList.remove('error-bg');
     } else {
         // Typing mistake! Reset combo.
@@ -859,6 +921,7 @@ socket.on('roundWon', (data) => {
     // Animate hurt on loser
     const loserNum = winnerNum === 1 ? 2 : 1;
     playAnimation(loserNum, 'hurt');
+    createBlood(loserNum);
     
     // Show feedback
     if (winnerNum === myPlayerNum) {
@@ -880,7 +943,10 @@ socket.on('gameOver', (data) => {
     const attackerNum = data.players[0].id === data.winner ? 1 : 2;
     const defenderNum = attackerNum === 1 ? 2 : 1;
     playAnimation(attackerNum, 'attack');
-    setTimeout(() => playAnimation(defenderNum, 'hurt'), 100);
+    setTimeout(() => {
+        playAnimation(defenderNum, 'knockback');
+        createBlood(defenderNum);
+    }, 100);
 
     // Calculate Stats
     const timeElapsedMinutes = (Date.now() - startTime) / 60000;
