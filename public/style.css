@@ -4,7 +4,7 @@
     --bg-color: #0f172a;
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
-    --glass-bg: rgba(15, 23, 42, 0.6);
+    --glass-bg: rgba(15, 23, 42, 0.5);
     --glass-border: rgba(255, 255, 255, 0.1);
 }
 
@@ -17,6 +17,10 @@
 body {
     font-family: 'Outfit', sans-serif;
     background-color: var(--bg-color);
+    background-image: url('background.png');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
     color: var(--text-main);
     overflow: hidden;
     height: 100vh;
@@ -27,25 +31,11 @@ body {
 
 /* Background */
 .sky {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 60%;
-    background: linear-gradient(to bottom, #020617, #1e293b);
-    z-index: -2;
+    display: none;
 }
 
 .ground {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 40%;
-    background: linear-gradient(to top, #0f172a, #334155);
-    z-index: -1;
-    border-top: 2px solid var(--primary);
-    box-shadow: 0 -10px 30px rgba(0, 240, 255, 0.2);
+    display: none;
 }
 
 #app {
@@ -228,24 +218,54 @@ input[type="text"]:focus {
     100% { opacity: 0.5; }
 }
 
+/* Split Layout */
+.split-layout {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    flex-direction: row;
+}
+
+.split-left {
+    flex: 1.8;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background-image: url('bg.png');
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    box-shadow: inset -10px 0 20px rgba(0,0,0,0.5); /* Shadow on the right edge */
+}
+
+.split-right {
+    flex: 1;
+    background-color: var(--bg-dark); /* Dark background */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    position: relative;
+}
+
 /* Game Header */
 .game-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
     width: 100%;
-    padding: 20px;
-    position: absolute;
-    top: 0;
-    left: 0;
+    margin-bottom: auto; /* Push typing to bottom */
 }
 
 .player-info {
-    width: 35%;
+    width: 100%;
+    margin-bottom: 0px;
 }
 
 .player-info.right {
-    text-align: right;
+    text-align: left;
 }
 
 .player-label {
@@ -281,29 +301,22 @@ input[type="text"]:focus {
 }
 
 .vs {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: 900;
     color: white;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    margin: 10px 0;
 }
 
 /* Battlefield */
 .battlefield {
-    flex: 1;
-    width: 100vw;
+    width: 100%;
+    height: 100%;
     display: flex;
-    justify-content: center; /* Center them so margin spacing works perfectly */
+    justify-content: center;
     align-items: flex-end;
-    padding-bottom: 50px;
+    padding-bottom: 100px;
     position: relative;
-    background-image: url('bg.png');
-    background-size: cover;
-    background-position: center bottom;
-    background-repeat: no-repeat;
-    /* Optional: subtle shadow/overlay if needed inside the arena */
-    box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
-    height: 400px;
-    margin-top: 50px;
 }
 
 .combat-text {
@@ -314,9 +327,10 @@ input[type="text"]:focus {
     font-size: 3rem;
     font-weight: 900;
     color: white;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+    text-shadow: 2px 2px 5px rgba(0,0,0,0.9), 0 0 20px rgba(255, 255, 255, 0.8);
     opacity: 0;
     transition: opacity 0.3s;
+    z-index: 50;
 }
 
 .combat-text.show {
@@ -669,21 +683,26 @@ input[type="text"]:focus {
 /* Typing Area */
 .typing-interface {
     width: 100%;
-    background: rgba(0, 0, 0, 0.85);
+    background: transparent;
     padding: 20px;
     z-index: 10;
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
+    box-shadow: none;
     display: flex;
     justify-content: center;
 }
 
 .typing-area {
-    width: 95%; /* Make it almost full width of the screen */
-    max-width: 1200px; /* Increased max-width for long sentences */
+    width: 100%;
+    max-width: 800px;
     display: flex;
     flex-direction: column;
     align-items: center;
     z-index: 10;
+}
+
+#typing-input {
+    width: 100%;
+    font-size: 1.5rem;
 }
 
 .word-display-container {
@@ -703,6 +722,16 @@ input[type="text"]:focus {
     font-weight: 700;
     letter-spacing: 2px;
     font-family: 'Courier New', Courier, monospace;
+    display: inline-block;
+}
+
+@keyframes popWordIn {
+    0% { transform: scale(0.8) translateX(30px); opacity: 0; }
+    100% { transform: scale(1) translateX(0); opacity: 1; }
+}
+
+.word-animate {
+    animation: popWordIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .typed {
@@ -762,6 +791,71 @@ input[type="text"]:focus {
     20%, 80% { transform: translate3d(10px, -5px, 0); }
     30%, 50%, 70% { transform: translate3d(-10px, 10px, 0); }
     40%, 60% { transform: translate3d(10px, -10px, 0); }
+}
+/* Side Info Panels */
+.side-info {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 25px;
+    width: 280px;
+    color: var(--text-main);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+    z-index: 10;
+    text-align: left;
+}
+
+.side-info.left-info {
+    left: 40px;
+}
+
+.side-info.right-info {
+    right: 40px;
+}
+
+.side-info h3 {
+    color: var(--primary);
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.side-info p {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.price-tier {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.price-tier span:last-child {
+    color: var(--secondary);
+}
+
+.price-note {
+    font-size: 0.85rem !important;
+    margin-top: 15px;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+@media (max-width: 1200px) {
+    .side-info {
+        display: none; /* Hide side panels on smaller screens to prevent overlapping */
+    }
 }
 
 /* Media Queries for Responsiveness */

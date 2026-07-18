@@ -33,6 +33,29 @@ const WORDS = {
     ]
 };
 
+// Fetch external words for multiplayer games to ensure huge variety
+async function fetchExternalWords() {
+    try {
+        const response = await fetch('https://random-word-api.herokuapp.com/word?number=3000');
+        const words = await response.json();
+        if (words && words.length > 0) {
+            const easy = words.filter(w => w.length >= 3 && w.length <= 5);
+            const medium = words.filter(w => w.length >= 6 && w.length <= 8).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+            const hard = words.filter(w => w.length >= 9).map(w => {
+                return w.split('').map((char, i) => i % 2 === 0 ? char.toUpperCase() : char).join('');
+            });
+            
+            if (easy.length > 0) WORDS.easy = easy;
+            if (medium.length > 0) WORDS.medium = medium;
+            if (hard.length > 0) WORDS.hard = hard;
+            console.log("Server successfully loaded external words!");
+        }
+    } catch(e) {
+        console.log("Server using fallback dictionary, fetch failed:", e.message);
+    }
+}
+fetchExternalWords();
+
 let lastWord = "";
 
 function getRandomWord(difficulty, usedWords) {
@@ -70,12 +93,14 @@ io.on('connection', (socket) => {
     socket.on('createRoom', (data) => {
         let playerName = 'Player 1';
         let difficulty = 'easy';
+        let timeLimit = 60;
         
         if (typeof data === 'string') {
             playerName = data;
         } else if (data) {
             playerName = data.playerName || 'Player 1';
             difficulty = data.difficulty || 'easy';
+            timeLimit = data.timeLimit || 60;
         }
 
         const roomCode = generateRoomCode();
@@ -85,6 +110,8 @@ io.on('connection', (socket) => {
             currentWord: [],
             usedWords: new Set(),
             difficulty: difficulty,
+            timeLimit: timeLimit,
+            timerInterval: null,
             lastWordTime: Date.now()
         };
         socket.join(roomCode);
@@ -105,16 +132,37 @@ io.on('connection', (socket) => {
                 io.to(roomCode).emit('playerJoined', room.players.length);
                 
                 // If 2 players, start game after a short delay
-                if (room.players.length === 2) {
-                    room.status = 'playing';
-                    room.currentWord = [getRandomWord(room.difficulty, room.usedWords), getRandomWord(room.difficulty, room.usedWords)];
-                    setTimeout(() => {
-                        io.to(roomCode).emit('gameStart', {
-                            word: room.currentWord,
-                            players: room.players
-                        });
-                    }, 1000);
-                }
+                // Both players joined, start game!
+                room.status = 'playing';
+                room.currentWord = [getRandomWord(room.difficulty, room.usedWords), getRandomWord(room.difficulty, room.usedWords)];
+                io.to(roomCode).emit('gameStart', {
+                    word: room.currentWord,
+                    players: room.players,
+                    timeLimit: room.timeLimit
+                });
+                
+                // Start Server Timer
+                let timeLeft = room.timeLimit;
+                room.timerInterval = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(room.timerInterval);
+                        if (room.status === 'playing') {
+                            room.status = 'gameover';
+                            const p1 = room.players[0];
+                            const p2 = room.players[1];
+                            let winner = p1.id;
+                            if (p2.health > p1.health) winner = p2.id;
+                            else if (p1.health === p2.health) winner = null; // Draw
+                            
+                            io.to(roomCode).emit('gameOver', {
+                                winner: winner,
+                                players: room.players,
+                                reason: 'timeout'
+                            });
+                        }
+                    }
+                }, 1000);
             } else {
                 socket.emit('errorMsg', 'Room is full');
             }
@@ -157,6 +205,7 @@ io.on('connection', (socket) => {
                 if (room.players[opponentIndex].health <= 0) {
                     room.players[opponentIndex].health = 0;
                     room.status = 'gameover';
+                    if (room.timerInterval) clearInterval(room.timerInterval);
                     io.to(roomCode).emit('gameOver', {
                         winner: room.players[attackerIndex].id,
                         players: room.players
@@ -180,6 +229,85 @@ io.on('connection', (socket) => {
         socket.to(roomCode).emit('opponentKeystroke');
     });
 
+    // Play Again
+    socket.on('playAgain', (roomCode) => {
+        const room = rooms[roomCode];
+        if (room) {
+            const player = room.players.find(p => p.id === socket.id);
+            if (player) player.wantsRematch = true;
+            
+            // Check if both want rematch
+            const bothReady = room.players.length === 2 && room.players.every(p => p.wantsRematch);
+            if (bothReady) {
+                // Reset game state
+                room.players.forEach(p => {
+                    p.health = 100;
+                    p.wantsRematch = false;
+                });
+                room.status = 'playing';
+                room.currentWord = [getRandomWord(room.difficulty, room.usedWords), getRandomWord(room.difficulty, room.usedWords)];
+                
+                setTimeout(() => {
+                    io.to(roomCode).emit('gameStart', {
+                        word: room.currentWord,
+                        players: room.players,
+                        timeLimit: room.timeLimit
+                    });
+                    
+                    // Restart Server Timer
+                    let timeLeft = room.timeLimit;
+                    if (room.timerInterval) clearInterval(room.timerInterval);
+                    room.timerInterval = setInterval(() => {
+                        timeLeft--;
+                        if (timeLeft <= 0) {
+                            clearInterval(room.timerInterval);
+                            if (room.status === 'playing') {
+                                room.status = 'gameover';
+                                const p1 = room.players[0];
+                                const p2 = room.players[1];
+                                let winner = p1.id;
+                                if (p2.health > p1.health) winner = p2.id;
+                                else if (p1.health === p2.health) winner = null; // Draw
+                                
+                                io.to(roomCode).emit('gameOver', {
+                                    winner: winner,
+                                    players: room.players,
+                                    reason: 'timeout'
+                                });
+                            }
+                        }
+                    }, 1000);
+                }, 1000);
+            }
+        }
+    });
+
+    // Leave Room explicitly
+    socket.on('leaveRoom', (roomCode) => {
+        const room = rooms[roomCode];
+        if (room) {
+            const playerIndex = room.players.findIndex(p => p.id === socket.id);
+            if (playerIndex !== -1) {
+                socket.leave(roomCode);
+                
+                if (room.status === 'playing' && room.players.length === 2) {
+                    const opponentIndex = playerIndex === 0 ? 1 : 0;
+                    room.players[playerIndex].health = 0;
+                    room.status = 'gameover';
+                    if (room.timerInterval) clearInterval(room.timerInterval);
+                    io.to(roomCode).emit('gameOver', {
+                        winner: room.players[opponentIndex].id,
+                        players: room.players,
+                        reason: 'disconnect'
+                    });
+                } else {
+                    io.to(roomCode).emit('playerLeft');
+                }
+                delete rooms[roomCode];
+            }
+        }
+    });
+
     // Disconnect
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
@@ -191,6 +319,7 @@ io.on('connection', (socket) => {
                     const opponentIndex = playerIndex === 0 ? 1 : 0;
                     room.players[playerIndex].health = 0;
                     room.status = 'gameover';
+                    if (room.timerInterval) clearInterval(room.timerInterval);
                     io.to(code).emit('gameOver', {
                         winner: room.players[opponentIndex].id,
                         players: room.players,

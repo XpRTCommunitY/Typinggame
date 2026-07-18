@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xprtcommunity - Keyboard Battle</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <!-- Background elements -->
     <div class="sky"></div>
@@ -15,15 +17,37 @@
     <div id="app">
         <!-- Main Menu -->
         <div id="menu-screen" class="screen active">
+            <!-- Left Info Panel -->
+            <div class="side-info left-info">
+                <h3>XpRT Exclusive</h3>
+                <p>100% Free exclusively for students of the XpRT Community Official Institute.</p>
+            </div>
+            
+            <!-- Right Info Panel -->
+            <div class="side-info right-info">
+                <h3>Standard Pricing</h3>
+                <div class="price-tier">
+                    <span>Basic Plan</span>
+                    <span>$4.99/mo</span>
+                </div>
+                <div class="price-tier">
+                    <span>Pro Plan</span>
+                    <span>$9.99/mo</span>
+                </div>
+                <p class="price-note">*Pricing applies to non-institute members only.</p>
+            </div>
+
             <div class="glass-panel main-menu-panel">
                 <h1 class="glitch" data-text="xprtcommunity">xprtcommunity</h1>
                 <p class="subtitle">Multiplayer Keyboard Battle</p>
-                
+
                 <div class="menu-actions">
-                    <input type="text" id="input-player-name" placeholder="Enter Your Name" maxlength="15" style="margin-bottom: 15px; width: 100%;">
+                    <input type="text" id="input-player-name" placeholder="Enter Your Name" maxlength="15"
+                        style="margin-bottom: 15px; width: 100%;">
                     <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                         <button id="btn-create" class="btn primary" style="flex: 1;">Create Room</button>
-                        <button id="btn-computer" class="btn primary" style="flex: 1; background: #8b5cf6;">Vs Computer</button>
+                        <button id="btn-computer" class="btn primary" style="flex: 1; background: #8b5cf6;">Vs
+                            Computer</button>
                     </div>
 
                     <div class="divider">OR</div>
@@ -41,18 +65,35 @@
             <div class="glass-panel main-menu-panel">
                 <h1 class="glitch" data-text="Difficulty" style="font-size: 3rem;">Difficulty</h1>
                 <p class="subtitle" id="difficulty-mode-text">Select your challenge</p>
-                
+
                 <div class="menu-actions">
-                    <select id="difficulty-select" style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.5); border: 2px solid var(--primary); color: white; border-radius: 8px; font-size: 1.1rem; outline: none; cursor: pointer;">
+                    <select id="difficulty-select"
+                        style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.5); border: 2px solid var(--primary); color: white; border-radius: 8px; font-size: 1.1rem; outline: none; cursor: pointer;">
                         <option value="easy">Easy (Lowercase Words)</option>
                         <option value="medium">Medium (Capitalized & Moderate)</option>
                         <option value="hard">Hard (Mixed Case & Long)</option>
                         <option value="impossible">Impossible (Complex Phrases)</option>
                     </select>
 
+                    <select id="time-select"
+                        style="width: 100%; padding: 12px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.5); border: 2px solid var(--secondary); color: white; border-radius: 8px; font-size: 1.1rem; outline: none; cursor: pointer;">
+                        <option value="1">1 Minute</option>
+                        <option value="2">2 Minutes</option>
+                        <option value="3">3 Minutes</option>
+                        <option value="4">4 Minutes</option>
+                        <option value="5">5 Minutes</option>
+                        <option value="6">6 Minutes</option>
+                        <option value="7">7 Minutes</option>
+                        <option value="8">8 Minutes</option>
+                        <option value="9">9 Minutes</option>
+                        <option value="10">10 Minutes</option>
+                        <option value="15">15 Minutes</option>
+                    </select>
+
                     <div style="display: flex; gap: 10px; margin-bottom: 20px; width: 100%;">
                         <button id="btn-start-game" class="btn primary" style="flex: 1;">Start</button>
-                        <button id="btn-back-to-menu" class="btn secondary" style="flex: 1; background: #64748b;">Back</button>
+                        <button id="btn-back-to-menu" class="btn secondary"
+                            style="flex: 1; background: #64748b;">Back</button>
                     </div>
                 </div>
             </div>
@@ -71,62 +112,95 @@
         <!-- Game Screen -->
         <div id="game-screen" class="screen">
             <!-- Countdown Overlay -->
-            <div id="countdown-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 100; font-size: 8rem; color: var(--primary); font-family: 'Courier New', Courier, monospace; font-weight: bold; text-shadow: 0 0 30px var(--primary); pointer-events: none; opacity: 0; transition: opacity 0.3s;">
+            <div id="countdown-overlay"
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; z-index: 100; font-size: 10rem; color: var(--primary); font-family: 'Courier New', Courier, monospace; font-weight: bold; text-shadow: 0 0 30px var(--primary); pointer-events: none; opacity: 0; transition: opacity 0.3s;">
                 3
             </div>
 
-            <div class="game-header" style="background: rgba(0, 0, 0, 0.85); z-index: 10; padding-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-                <div class="player-info left" id="p1-info">
-                    <span class="player-label" id="p1-label">Player 1</span>
-                    <div class="health-bar-container">
-                        <div class="health-bar" id="p1-health" style="width: 100%;"></div>
-                    </div>
-                </div>
-                <div class="vs">VS</div>
-                <div class="player-info right" id="p2-info">
-                    <span class="player-label" id="p2-label">Player 2</span>
-                    <div class="health-bar-container">
-                        <div class="health-bar" id="p2-health" style="width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
+            <div class="split-layout">
+                <div class="split-left">
+                    <div class="battlefield">
+                        <!-- Combo Counter -->
+                        <div id="combo-counter"
+                            style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%) scale(0); font-size: 3rem; font-weight: 900; color: #fbbf24; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); background: rgba(0, 0, 0, 0.7); padding: 10px 40px; border-radius: 50px; border: 3px solid #fbbf24; box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); opacity: 0; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 15;">
+                            2x COMBO!
+                        </div>
 
-            <div class="battlefield">
-                <!-- Combo Counter -->
-                <div id="combo-counter" style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%) scale(0); font-size: 3rem; font-weight: 900; color: #fbbf24; text-shadow: 0 0 20px #fbbf24, 0 0 40px #f59e0b; opacity: 0; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 15;">
-                    2x COMBO!
-                </div>
+                        <div class="combat-text" id="combat-feedback">FIGHT!</div>
 
-                <div class="combat-text" id="combat-feedback">FIGHT!</div>
+                        <div class="stickman" id="stickman-p1">
+                            <div class="head"></div>
+                            <div class="torso"></div>
+                            <div class="left-arm arm"></div>
+                            <div class="right-arm arm"></div>
+                            <div class="left-leg leg"></div>
+                            <div class="right-leg leg"></div>
+                        </div>
 
-                <div class="stickman" id="stickman-p1">
-                    <div class="head"></div>
-                    <div class="torso"></div>
-                    <div class="left-arm arm"></div>
-                    <div class="right-arm arm"></div>
-                    <div class="left-leg leg"></div>
-                    <div class="right-leg leg"></div>
-                </div>
-                
-                <div class="stickman right" id="stickman-p2">
-                    <div class="head"></div>
-                    <div class="torso"></div>
-                    <div class="left-arm arm"></div>
-                    <div class="right-arm arm"></div>
-                    <div class="left-leg leg"></div>
-                    <div class="right-leg leg"></div>
-                </div>
-            </div>
-
-            <div class="typing-interface">
-                <div class="typing-area">
-                    <div class="word-display-container">
-                        <div class="word-display">
-                            <span id="typed-part" class="typed"></span><span id="remaining-part" class="remaining">Wait...</span>
-                            <span id="next-word" class="next-word" style="color: #64748b; margin-left: 20px; filter: blur(1px);"></span>
+                        <div class="stickman right" id="stickman-p2">
+                            <div class="head"></div>
+                            <div class="torso"></div>
+                            <div class="left-arm arm"></div>
+                            <div class="right-arm arm"></div>
+                            <div class="left-leg leg"></div>
+                            <div class="right-leg leg"></div>
                         </div>
                     </div>
-                    <input type="text" id="typing-input" autocomplete="off" spellcheck="false" placeholder="Type here..." disabled>
+                </div>
+
+                <div class="split-right" style="padding-top: 100px;">
+                    <!-- Branding Header -->
+                    <div
+                        style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-family: 'Courier New', Courier, monospace; font-size: 2.5rem; font-weight: 900; color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.8); z-index: 10; width: 100%; text-align: center;">
+                        XpRT CommunitY
+                    </div>
+
+                    <!-- Top controls container -->
+                    <div class="top-controls"
+                        style="position: absolute; top: 302px; right: 20px; z-index: 20; display: flex; gap: 10px;">
+                        <button id="btn-pause-game" class="btn secondary"
+                            style="padding: 10px 15px; font-size: 0.9rem; background: rgba(0,0,0,0.5);">Pause</button>
+                        <button id="btn-leave-game" class="btn secondary"
+                            style="padding: 10px 15px; font-size: 0.9rem; background-color: var(--secondary); color: white;">Leave
+                            Game</button>
+                    </div>
+
+                    <div class="game-header">
+                        <div class="player-info left" id="p1-info">
+                            <span class="player-label" id="p1-label">Player 1</span>
+                            <div class="health-bar-container">
+                                <div class="health-bar" id="p1-health" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="vs">VS</div>
+                        <div class="player-info right" id="p2-info">
+                            <span class="player-label" id="p2-label">Player 2</span>
+                            <div class="health-bar-container">
+                                <div class="health-bar" id="p2-health" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Game Timer -->
+                    <div id="game-timer"
+                        style="font-size: 3.5rem; font-weight: 900; font-family: 'Courier New', Courier, monospace; color: var(--primary); text-shadow: 0 0 20px var(--primary); margin-bottom: 60px; align-self: flex-end; margin-right: 5%; z-index: 50;">
+                        00:00
+                    </div>
+
+                    <div class="typing-interface">
+                        <div class="typing-area">
+                            <div class="word-display-container">
+                                <div class="word-display">
+                                    <span id="typed-part" class="typed"></span><span id="remaining-part"
+                                        class="remaining">Wait...</span>
+                                    <span id="next-word" class="next-word"
+                                        style="color: #64748b; margin-left: 20px; filter: blur(1px);"></span>
+                                </div>
+                            </div>
+                            <input type="text" id="typing-input" autocomplete="off" spellcheck="false"
+                                placeholder="Type here..." disabled>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -136,12 +210,16 @@
             <div class="glass-panel">
                 <h1 id="gameover-title">Game Over</h1>
                 <p id="gameover-message"></p>
-                <div class="stats-box" style="margin: 20px 0; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
+                <div class="stats-box"
+                    style="margin: 20px 0; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px;">
                     <h3 style="margin-bottom: 10px; color: var(--primary);">Your Stats</h3>
                     <p id="stat-wpm">Speed: 0 WPM</p>
                     <p id="stat-accuracy">Accuracy: 0%</p>
                 </div>
-                <button id="btn-menu" class="btn primary">Back to Menu</button>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                    <button id="btn-play-again" class="btn primary">Play Again</button>
+                    <button id="btn-menu" class="btn secondary">Main Menu</button>
+                </div>
             </div>
         </div>
     </div>
@@ -149,4 +227,5 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="script.js?v=2"></script>
 </body>
+
 </html>

@@ -41,6 +41,8 @@ const statAccuracy = document.getElementById('stat-accuracy');
 // State
 let currentRoom = '';
 let myPlayerNum = 0;
+let gameTimerInterval = null;
+let gameSeconds = 0;
 let currentWord = '';
 let currentWordArray = [];
 
@@ -55,6 +57,7 @@ let botInterval = null;
 let botWordProgress = 0;
 let spPlayers = [];
 let spDifficulty = 'easy';
+let spTimeLimit = 60; // default 1 min
 let currentCombo = 0;
 
 const nextWordEl = document.getElementById('next-word');
@@ -63,7 +66,9 @@ const countdownOverlay = document.getElementById('countdown-overlay');
 
 const btnStartGame = document.getElementById('btn-start-game');
 const btnBackToMenu = document.getElementById('btn-back-to-menu');
+const btnPauseGame = document.getElementById('btn-pause-game');
 let pendingGameMode = '';
+let isPaused = false;
 
 const WORDS = {
     easy: ["attack", "defend", "strike", "dodge", "combo", "block", "jump", "dash", "punch", "kick", "counter", "parry", "smash", "slash", "thrust"],
@@ -206,6 +211,15 @@ function setWord(wordArray) {
     } else {
         nextWordEl.textContent = '';
     }
+    
+    // Trigger word pop animation
+    const wordDisplay = document.querySelector('.word-display');
+    if (wordDisplay) {
+        wordDisplay.classList.remove('word-animate');
+        void wordDisplay.offsetWidth; // Force reflow
+        wordDisplay.classList.add('word-animate');
+    }
+    
     typingInput.value = '';
     typingInput.disabled = false;
     typingInput.focus();
@@ -219,6 +233,11 @@ function startBotLoop() {
     
     function botType() {
         if (!screens.game.classList.contains('active')) return;
+        
+        if (isPaused) {
+            botTimeout = setTimeout(botType, 500); // Check again later
+            return;
+        }
         
         playAnimation(2, 'jab');
         botWordProgress++;
@@ -240,10 +259,10 @@ function startBotLoop() {
             }
         }
         
-        let baseSpeed = 500; // Easy
-        if (spDifficulty === 'medium') baseSpeed = 300;
-        if (spDifficulty === 'hard') baseSpeed = 150;
-        if (spDifficulty === 'impossible') baseSpeed = 50;
+        let baseSpeed = 1200; // Extremely slow for 'easy' (1.2s per character)
+        if (spDifficulty === 'medium') baseSpeed = 500;
+        if (spDifficulty === 'hard') baseSpeed = 200;
+        if (spDifficulty === 'impossible') baseSpeed = 70;
         
         // Randomize speed slightly (+/- 20%) to feel like human typing
         let delay = baseSpeed + (Math.random() * baseSpeed * 0.4 - baseSpeed * 0.2);
@@ -286,6 +305,7 @@ function handleSinglePlayerTypeProgress() {
 
 function endSinglePlayerGame(winnerNum) {
     clearTimeout(botTimeout);
+    stopGameTimer();
     showScreen('gameover');
     const amIWinner = winnerNum === 1;
     gameoverTitle.textContent = amIWinner ? 'VICTORY!' : 'DEFEAT!';
@@ -307,6 +327,42 @@ function endSinglePlayerGame(winnerNum) {
     statAccuracy.textContent = `Accuracy: ${accuracy}%`;
 }
 
+function startGameTimer(initialSeconds) {
+    clearInterval(gameTimerInterval);
+    gameSeconds = initialSeconds;
+    const timerEl = document.getElementById('game-timer');
+    if (timerEl) {
+        const initM = Math.floor(gameSeconds / 60).toString().padStart(2, '0');
+        const initS = (gameSeconds % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${initM}:${initS}`;
+    }
+    
+    gameTimerInterval = setInterval(() => {
+        if (isPaused) return; // Skip decrement if paused
+        
+        gameSeconds--;
+        const m = Math.floor(gameSeconds / 60).toString().padStart(2, '0');
+        const s = (gameSeconds % 60).toString().padStart(2, '0');
+        if (timerEl) timerEl.textContent = `${m}:${s}`;
+        
+        if (gameSeconds <= 0) {
+            clearInterval(gameTimerInterval);
+            if (isSinglePlayer) {
+                // Time up! Player with more health wins
+                const p1Health = spPlayers[0].health;
+                const botHealth = spPlayers[1].health;
+                let winner = 1;
+                if (botHealth >= p1Health) winner = 2; // In single player, if tie, bot wins or let's say tie is loss
+                endSinglePlayerGame(winner);
+            }
+        }
+    }, 1000);
+}
+
+function stopGameTimer() {
+    clearInterval(gameTimerInterval);
+}
+
 function startCountdown(callback) {
     typingInput.disabled = true;
     countdownOverlay.style.opacity = 1;
@@ -322,6 +378,12 @@ function startCountdown(callback) {
         } else {
             clearInterval(countInterval);
             countdownOverlay.style.opacity = 0;
+            // The timer start is now handled outside, or we pass the value.
+            // But wait, startCountdown doesn't know the time limit!
+            // Let's pass time limit to startCountdown
+            if (isSinglePlayer) {
+                startGameTimer(spTimeLimit);
+            }
             callback();
         }
     }, 1000);
@@ -344,12 +406,14 @@ btnBackToMenu.addEventListener('click', () => {
 
 btnStartGame.addEventListener('click', () => {
     const difficulty = document.getElementById('difficulty-select').value;
+    const timeLimit = parseInt(document.getElementById('time-select').value) * 60;
     const name = inputPlayerName.value.trim() || 'Player 1';
     
     if (pendingGameMode === 'single') {
         isSinglePlayer = true;
         myPlayerNum = 1;
         spDifficulty = difficulty;
+        spTimeLimit = timeLimit;
         
         spPlayers = [
             { id: 'p1', name: name, health: 100 },
@@ -372,7 +436,7 @@ btnStartGame.addEventListener('click', () => {
         });
     } else if (pendingGameMode === 'multi') {
         isSinglePlayer = false;
-        socket.emit('createRoom', { playerName: name, difficulty });
+        socket.emit('createRoom', { playerName: name, difficulty, timeLimit });
     }
 });
 
@@ -389,8 +453,74 @@ btnJoin.addEventListener('click', () => {
 });
 
 btnMenu.addEventListener('click', () => {
+    stopGameTimer();
+    clearTimeout(botTimeout);
     showScreen('menu');
 });
+
+const btnPlayAgain = document.getElementById('btn-play-again');
+if (btnPlayAgain) {
+    btnPlayAgain.addEventListener('click', () => {
+        if (isSinglePlayer) {
+            // Restart Single Player game
+            spPlayers = [{ id: 'p1', health: 100, name: inputPlayerName.value.trim() || 'Player 1' }, { id: 'bot', health: 100, name: 'Bot (' + spDifficulty + ')' }];
+            showScreen('game');
+            updateHealth(spPlayers);
+            
+            startTime = Date.now();
+            totalKeystrokes = 0;
+            totalCorrectCharactersTyped = 0;
+            currentCombo = 0;
+            if (comboCounterEl) comboCounterEl.style.opacity = 0;
+            
+            showFeedback('READY...');
+            startCountdown(() => {
+                setWord([getRandomWord(spDifficulty), getRandomWord(spDifficulty)]);
+                startBotLoop();
+            });
+        } else {
+            // Multiplayer: Send request to server
+            socket.emit('playAgain', currentRoom);
+            showScreen('waiting');
+            document.getElementById('display-room-code').textContent = currentRoom;
+            // Wait for other player
+        }
+    });
+}
+
+const btnLeaveGame = document.getElementById('btn-leave-game');
+if (btnLeaveGame) {
+    btnLeaveGame.addEventListener('click', () => {
+        if (!isSinglePlayer && currentRoom) {
+            socket.emit('leaveRoom', currentRoom);
+        }
+        stopGameTimer();
+        clearTimeout(botTimeout);
+        showScreen('menu');
+    });
+}
+
+if(btnPauseGame) {
+    btnPauseGame.addEventListener('click', () => {
+        isPaused = !isPaused;
+        if (isPaused) {
+            btnPauseGame.textContent = 'Resume';
+            btnPauseGame.style.backgroundColor = 'var(--primary)';
+            btnPauseGame.style.color = '#000';
+            countdownOverlay.textContent = 'PAUSED';
+            countdownOverlay.style.opacity = 1;
+            countdownOverlay.style.fontSize = '5rem';
+            typingInput.disabled = true;
+        } else {
+            btnPauseGame.textContent = 'Pause';
+            btnPauseGame.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            btnPauseGame.style.color = '#fff';
+            countdownOverlay.style.opacity = 0;
+            typingInput.disabled = false;
+            typingInput.focus();
+        }
+    });
+}
 
 // Click anywhere to focus typing input in game
 document.addEventListener('click', () => {
@@ -399,6 +529,11 @@ document.addEventListener('click', () => {
 
 // Event Listeners - Game
 typingInput.addEventListener('keydown', (e) => {
+    if (isPaused) {
+        e.preventDefault();
+        return;
+    }
+
     // If input is currently empty and user types space, ignore it
     if (e.key === ' ' && typingInput.value.trim() === '') {
         e.preventDefault();
@@ -431,6 +566,10 @@ typingInput.addEventListener('keydown', (e) => {
 });
 
 typingInput.addEventListener('input', (e) => {
+    if (isPaused) {
+        typingInput.value = '';
+        return;
+    }
     // Animate and send keystroke on EVERY key press (correct or wrong)
     if (!isSinglePlayer) socket.emit('keystroke', currentRoom);
     playAnimation(myPlayerNum, 'jab');
@@ -450,6 +589,15 @@ typingInput.addEventListener('input', (e) => {
             comboCounterEl.style.opacity = 1;
             comboCounterEl.style.transform = 'translateX(-50%) scale(1.2)';
             setTimeout(() => comboCounterEl.style.transform = 'translateX(-50%) scale(1)', 150);
+            
+            // Hide combo after a short delay so it comes and goes
+            if (comboCounterEl.dataset.hideTimeout) {
+                clearTimeout(parseInt(comboCounterEl.dataset.hideTimeout));
+            }
+            comboCounterEl.dataset.hideTimeout = setTimeout(() => {
+                comboCounterEl.style.opacity = 0;
+                comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
+            }, 1000); // Fades out after 1 second if no new combo hits
         }
 
         if (isSinglePlayer) {
@@ -511,6 +659,10 @@ socket.on('gameStart', (data) => {
     showFeedback('READY...');
     startCountdown(() => {
         setWord(data.word);
+        // Start multiplayer timer
+        if (!isSinglePlayer && data.timeLimit) {
+            startGameTimer(data.timeLimit);
+        }
     });
 });
 
@@ -542,7 +694,9 @@ socket.on('roundWon', (data) => {
 
 socket.on('gameOver', (data) => {
     updateHealth(data.players);
-    const amIWinner = socket.id === data.winner;
+    stopGameTimer();
+    showScreen('gameover');
+    const amIWinner = data.winner === socket.id;
     
     // Play final animation
     const attackerNum = data.players[0].id === data.winner ? 1 : 2;
@@ -572,8 +726,6 @@ socket.on('gameOver', (data) => {
         // Show Stats
         statWpm.textContent = `Speed: ${wpm} WPM`;
         statAccuracy.textContent = `Accuracy: ${accuracy}%`;
-
-        currentRoom = '';
     }, 1500);
 });
 
@@ -590,3 +742,30 @@ socket.on('errorMsg', (msg) => {
     menuMessage.textContent = msg;
     setTimeout(() => menuMessage.textContent = '', 3000);
 });
+
+// Fetch random words from the internet to ensure massive variety
+async function fetchExternalWords() {
+    try {
+        const response = await fetch('https://random-word-api.herokuapp.com/word?number=3000');
+        const words = await response.json();
+        if (words && words.length > 0) {
+            // Sort them into difficulties
+            const easy = words.filter(w => w.length >= 3 && w.length <= 5);
+            const medium = words.filter(w => w.length >= 6 && w.length <= 8).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+            const hard = words.filter(w => w.length >= 9).map(w => {
+                // Mix case randomly for hard mode
+                return w.split('').map((char, i) => i % 2 === 0 ? char.toUpperCase() : char).join('');
+            });
+            
+            if (easy.length > 0) WORDS.easy = easy;
+            if (medium.length > 0) WORDS.medium = medium;
+            if (hard.length > 0) WORDS.hard = hard;
+            
+            console.log("Successfully loaded external words!");
+        }
+    } catch(e) {
+        console.log("Using fallback dictionary, fetch failed:", e);
+    }
+}
+
+fetchExternalWords();
