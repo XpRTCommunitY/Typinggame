@@ -97,6 +97,13 @@ function getRandomWord(difficulty = 'easy') {
 function showScreen(screenName) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
     screens[screenName].classList.add('active');
+    
+    // Toggle in-game class to manage global background and side panels
+    if (screenName === 'game') {
+        document.body.classList.add('in-game');
+    } else {
+        document.body.classList.remove('in-game');
+    }
 }
 
 function showFeedback(text, isError = false) {

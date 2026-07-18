@@ -29,6 +29,10 @@ body {
     align-items: center;
 }
 
+body.in-game {
+    background-image: none; /* Hide background image during gameplay */
+}
+
 /* Background */
 .sky {
     display: none;
@@ -856,6 +860,10 @@ input[type="text"]:focus {
     .side-info {
         display: none; /* Hide side panels on smaller screens to prevent overlapping */
     }
+}
+
+body.in-game .side-info {
+    display: none !important; /* Always hide side panels during gameplay */
 }
 
 /* Media Queries for Responsiveness */
