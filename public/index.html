@@ -50,6 +50,13 @@
                             Computer</button>
                     </div>
 
+                    <div style="margin-bottom: 20px; text-align: center;">
+                        <label style="color: white; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="effects-toggle" checked style="width: 18px; height: 18px;">
+                            Enable Vibration & Sound Effects
+                        </label>
+                    </div>
+
                     <div class="divider">OR</div>
                     <div class="join-section">
                         <input type="text" id="input-room-code" placeholder="Enter Code" maxlength="6">
@@ -150,13 +157,13 @@
 
                 <div class="split-right" style="padding-top: 100px;">
                     <!-- Branding Header -->
-                    <div
+                    <div id="mobile-branding"
                         style="position: absolute; top: 20px; left: 50%; transform: translateX(-50%); font-family: 'Courier New', Courier, monospace; font-size: 2.5rem; font-weight: 900; color: #ef4444; text-shadow: 0 0 15px rgba(239, 68, 68, 0.8); z-index: 10; width: 100%; text-align: center;">
                         XpRT CommunitY
                     </div>
 
                     <!-- Top controls container -->
-                    <div class="top-controls"
+                    <div id="mobile-top-controls" class="top-controls"
                         style="position: absolute; top: 302px; right: 20px; z-index: 20; display: flex; gap: 10px;">
                         <button id="btn-pause-game" class="btn secondary"
                             style="padding: 10px 15px; font-size: 0.9rem; background: rgba(0,0,0,0.5);">Pause</button>

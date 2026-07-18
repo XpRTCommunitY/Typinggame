@@ -108,6 +108,7 @@ io.on('connection', (socket) => {
             players: [{ id: socket.id, health: 100, name: playerName }],
             status: 'waiting', // waiting, playing, gameover
             currentWord: [],
+            previousWord: null,
             usedWords: new Set(),
             difficulty: difficulty,
             timeLimit: timeLimit,
@@ -135,6 +136,8 @@ io.on('connection', (socket) => {
                 // Both players joined, start game!
                 room.status = 'playing';
                 room.currentWord = [getRandomWord(room.difficulty, room.usedWords), getRandomWord(room.difficulty, room.usedWords)];
+                room.previousWord = null;
+                room.lastWordTime = Date.now();
                 io.to(roomCode).emit('gameStart', {
                     word: room.currentWord,
                     players: room.players,
@@ -176,29 +179,30 @@ io.on('connection', (socket) => {
         const room = rooms[roomCode];
         if (!room || room.status !== 'playing') return;
 
-        // Anti-cheat check: Can't type a word in less than 50ms per character
         const now = Date.now();
-        const timeTaken = now - room.lastWordTime;
-        const minTimeRequired = room.currentWord[0].length * 50; 
-        
-        if (timeTaken < minTimeRequired) {
-            // Typing too fast, ignore
-            return;
-        }
+        let isValidHit = false;
+        let isLateHit = false;
 
         // Check if word is completed correctly
         if (typedText === room.currentWord[0]) {
-            room.lastWordTime = now;
-            
+            isValidHit = true;
+        } else if (room.previousWord && typedText === room.previousWord && (now - room.lastWordTime < 1500)) {
+            // LAG COMPENSATION: Accept if typed the previous word and it changed less than 1.5s ago
+            isValidHit = true;
+            isLateHit = true;
+        }
+
+        if (isValidHit) {
             // Find opponent and deal damage
             const opponentIndex = room.players.findIndex(p => p.id !== socket.id);
             const attackerIndex = room.players.findIndex(p => p.id === socket.id);
             
             if (opponentIndex !== -1) {
-                // Apply combo damage
-                let damage = 10;
-                if (combo >= 10) damage = 25;
-                else if (combo >= 3) damage = 15;
+                // Dynamic Damage based on selected time limit
+                let baseDamage = Math.max(0.1, 300 / room.timeLimit);
+                let damage = baseDamage;
+                if (combo >= 10) damage = baseDamage * 2.5;
+                else if (combo >= 3) damage = baseDamage * 1.5;
 
                 room.players[opponentIndex].health -= damage;
                 
@@ -211,9 +215,13 @@ io.on('connection', (socket) => {
                         players: room.players
                     });
                 } else {
-                    // Next round
-                    room.currentWord.shift();
-                    room.currentWord.push(getRandomWord(room.difficulty, room.usedWords));
+                    if (!isLateHit) {
+                        room.previousWord = room.currentWord[0];
+                        room.lastWordTime = now;
+                        room.currentWord.shift();
+                        room.currentWord.push(getRandomWord(room.difficulty, room.usedWords));
+                    }
+                    
                     io.to(roomCode).emit('roundWon', {
                         winnerId: room.players[attackerIndex].id,
                         newWord: room.currentWord,
@@ -246,6 +254,8 @@ io.on('connection', (socket) => {
                 });
                 room.status = 'playing';
                 room.currentWord = [getRandomWord(room.difficulty, room.usedWords), getRandomWord(room.difficulty, room.usedWords)];
+                room.previousWord = null;
+                room.lastWordTime = Date.now();
                 
                 setTimeout(() => {
                     io.to(roomCode).emit('gameStart', {

@@ -46,6 +46,115 @@ let gameSeconds = 0;
 let currentWord = '';
 let currentWordArray = [];
 
+// Effects & Sound
+const effectsToggle = document.getElementById('effects-toggle');
+let effectsEnabled = true;
+if (effectsToggle) {
+    effectsToggle.addEventListener('change', (e) => {
+        effectsEnabled = e.target.checked;
+    });
+}
+
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+let noiseBuffer;
+
+function initAudio() {
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function getNoiseBuffer() {
+    if (noiseBuffer) return noiseBuffer;
+    const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+    noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuffer;
+}
+
+function playSwishSound() {
+    if (!effectsEnabled) return;
+    initAudio();
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = getNoiseBuffer();
+    const noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.Q.value = 1;
+    noiseFilter.frequency.setValueAtTime(2000, audioCtx.currentTime);
+    noiseFilter.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.1);
+    
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioCtx.destination);
+    noise.start();
+    noise.stop(audioCtx.currentTime + 0.1);
+}
+
+function playHitSound() {
+    if (!effectsEnabled) return;
+    initAudio();
+    
+    // Low punch
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.2);
+    const oscGain = audioCtx.createGain();
+    oscGain.gain.setValueAtTime(1, audioCtx.currentTime);
+    oscGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    osc.connect(oscGain);
+    oscGain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.2);
+    
+    // Impact Noise
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = getNoiseBuffer();
+    const noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+    noiseFilter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioCtx.destination);
+    noise.start();
+    noise.stop(audioCtx.currentTime + 0.2);
+}
+
+function playErrorSound() {
+    if (!effectsEnabled) return;
+    initAudio();
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    osc1.type = 'sawtooth';
+    osc2.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(150, audioCtx.currentTime);
+    osc2.frequency.setValueAtTime(156, audioCtx.currentTime);
+    
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.15);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+    
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    osc1.start();
+    osc2.start();
+    osc1.stop(audioCtx.currentTime + 0.25);
+    osc2.stop(audioCtx.currentTime + 0.25);
+}
+
 // Stats
 let startTime = 0;
 let totalKeystrokes = 0;
@@ -93,6 +202,47 @@ function getRandomWord(difficulty = 'easy') {
     return newWord;
 }
 
+// --- Sparks / Particles ---
+function createSparks(playerNum) {
+    const battlefield = document.querySelector('.battlefield');
+    if (!battlefield || !effectsEnabled) return;
+    
+    // Create 4-6 sparks
+    const numSparks = Math.floor(Math.random() * 3) + 4;
+    for (let i = 0; i < numSparks; i++) {
+        const spark = document.createElement('div');
+        spark.style.position = 'absolute';
+        spark.style.width = '14px'; // Made much bigger
+        spark.style.height = '14px';
+        spark.style.backgroundColor = playerNum === 1 ? 'var(--primary)' : 'var(--secondary)';
+        spark.style.boxShadow = `0 0 25px ${spark.style.backgroundColor}, 0 0 40px ${spark.style.backgroundColor}`; // Stronger glow
+        spark.style.borderRadius = '50%';
+        spark.style.zIndex = '50';
+        
+        // Position them between the fighters (clash point)
+        const baseX = playerNum === 1 ? '55%' : '45%';
+        spark.style.left = baseX;
+        spark.style.top = '45%'; // Slightly higher
+        
+        // Random velocity (mostly upwards and towards opponent)
+        const dir = playerNum === 1 ? 1 : -1;
+        const vx = (Math.random() * 200 * dir) + (100 * dir); // Fly further
+        const vy = (Math.random() * -200) - 100;
+        
+        battlefield.appendChild(spark);
+        
+        const animation = spark.animate([
+            { transform: 'translate(0, 0) scale(1.5)', opacity: 1 },
+            { transform: `translate(${vx}px, ${vy}px) scale(0)`, opacity: 0 }
+        ], {
+            duration: 400 + Math.random() * 300, // Stay visible longer
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+        });
+        
+        animation.onfinish = () => spark.remove();
+    }
+}
+
 // Helper to switch screens
 function showScreen(screenName) {
     Object.values(screens).forEach(s => s.classList.remove('active'));
@@ -122,10 +272,15 @@ function showFeedback(text, isError = false) {
 
     combatFeedback.classList.add('show');
     
-    // Shake screen on hit
+    // Shake screen and play sound on hit
     if (!isError && text !== 'READY...') {
-        document.body.classList.add('shake-screen');
-        setTimeout(() => document.body.classList.remove('shake-screen'), 300);
+        if (effectsEnabled) {
+            document.body.classList.add('shake-screen');
+            setTimeout(() => document.body.classList.remove('shake-screen'), 300);
+        }
+        playHitSound();
+    } else if (isError) {
+        playErrorSound();
     }
 
     setTimeout(() => combatFeedback.classList.remove('show'), 1000);
@@ -209,6 +364,11 @@ function updateHealth(players) {
 }
 
 function setWord(wordArray) {
+    // Prevent resetting typing progress if the word is the same (used for lag compensation updates)
+    if (currentWord && currentWord === wordArray[0]) {
+        return;
+    }
+
     currentWordArray = wordArray;
     currentWord = wordArray[0];
     typedPartEl.textContent = '';
@@ -247,13 +407,18 @@ function startBotLoop() {
         }
         
         playAnimation(2, 'jab');
+        createSparks(2);
         botWordProgress++;
         
         if (botWordProgress >= currentWordArray[0].length) {
             // Bot finished word!
             botWordProgress = 0;
             playAnimation(2, 'head-smash');
-            spPlayers[0].health -= 10;
+            
+            // Dynamic damage calculation for bot based on chosen time
+            let botBaseDamage = Math.max(0.1, 300 / spTimeLimit);
+            spPlayers[0].health -= botBaseDamage;
+            
             updateHealth(spPlayers);
             
             if (spPlayers[0].health <= 0) {
@@ -287,10 +452,11 @@ function startBotLoop() {
 function handleSinglePlayerTypeProgress() {
     botWordProgress = 0; // Reset bot progress on player success
     
-    // Bonus damage for high combos!
-    let damage = 10;
-    if (currentCombo >= 3) damage = 15;
-    if (currentCombo >= 10) damage = 25;
+    // Dynamic damage based on chosen time limit
+    let baseDamage = Math.max(0.1, 300 / spTimeLimit);
+    let damage = baseDamage;
+    if (currentCombo >= 3) damage = baseDamage * 1.5;
+    if (currentCombo >= 10) damage = baseDamage * 2.5;
     
     spPlayers[1].health -= damage;
     updateHealth(spPlayers);
@@ -565,6 +731,7 @@ typingInput.addEventListener('keydown', (e) => {
                 comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
             }
             
+            playErrorSound();
             wordDisplayContainer.classList.add('error-bg');
             setTimeout(() => wordDisplayContainer.classList.remove('error-bg'), 300);
             return;
@@ -580,6 +747,8 @@ typingInput.addEventListener('input', (e) => {
     // Animate and send keystroke on EVERY key press (correct or wrong)
     if (!isSinglePlayer) socket.emit('keystroke', currentRoom);
     playAnimation(myPlayerNum, 'jab');
+    playSwishSound(); // Play sword swing sound!
+    createSparks(myPlayerNum); // Visual clash sparks
 
     const typedText = e.target.value.trim(); // Handle space completion
     const targetWord = currentWord;
@@ -632,6 +801,7 @@ typingInput.addEventListener('input', (e) => {
             comboCounterEl.style.transform = 'translateX(-50%) scale(0)';
         }
         
+        playErrorSound();
         wordDisplayContainer.classList.add('error-bg');
         setTimeout(() => wordDisplayContainer.classList.remove('error-bg'), 300);
         e.target.value = e.target.value.slice(0, -1);
@@ -676,6 +846,7 @@ socket.on('gameStart', (data) => {
 socket.on('opponentKeystroke', () => {
     const opponentNum = myPlayerNum === 1 ? 2 : 1;
     playAnimation(opponentNum, 'jab');
+    createSparks(opponentNum);
 });
 
 socket.on('roundWon', (data) => {

@@ -375,108 +375,102 @@ input[type="text"]:focus {
     animation: idleBreathingRight 2s ease-in-out infinite;
 }
 
-/* Drawing the stickman with CSS - 1.5x Size */
+/* Drawing the stickman with CSS - Cyber Ninja Style */
 .stickman .head {
-    width: 90px;
-    height: 90px;
-    border: 9px solid black;
-    border-radius: 50%;
-    background: radial-gradient(circle at 30% 30%, #ffffff, #d1d5db);
+    width: 80px;
+    height: 85px;
+    border: 3px solid #0f172a;
+    border-radius: 40% 40% 50% 50%;
+    background: linear-gradient(135deg, #334155, #1e293b);
     position: absolute;
-    left: 36px; /* Centered horizontally (180 - 108) / 2 */
+    left: 50px; 
     top: 0;
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: inset -5px -5px 15px rgba(0,0,0,0.8), 0 5px 10px rgba(0,0,0,0.5);
 }
+
 .stickman .head .eye {
-    width: 12px;
+    width: 45px;
     height: 12px;
-    background: black;
-    border-radius: 50%;
-    position: absolute;
-    top: 25px;
-}
-.stickman .head .eye.left { display: none; } /* Profile view, hide left eye */
-.stickman .head .eye.right { right: 10px; } /* Single eye on the right side */
-
-.stickman .head .nose {
-    width: 8px;
-    height: 12px;
-    background: black;
-    border-radius: 4px;
-    position: absolute;
-    top: 38px;
-    right: -4px; /* Sticking out on the front edge */
-    left: auto;
-}
-
-.stickman .head .mouth {
-    width: 20px;
-    height: 10px;
-    border-bottom: 5px solid black;
-    border-radius: 50%;
-    position: absolute;
-    top: 55px;
-    right: 5px; /* Smirk on the right side */
-    left: auto;
-    transform: rotate(10deg);
-}
-
-.stickman .head .ear {
-    width: 15px;
-    height: 20px;
-    border: 6px solid black;
-    border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 15px var(--primary), 0 0 30px var(--primary);
+    border-radius: 6px;
     position: absolute;
     top: 35px;
+    right: -2px; /* Visor extending slightly */
+    z-index: 2;
 }
-.stickman .head .ear.left { left: -18px; border-right: none; } /* Ear on the back of the head */
-.stickman .head .ear.right { display: none; } /* Hide front ear */
+
+#stickman-p2 .head .eye {
+    background: var(--secondary);
+    box-shadow: 0 0 15px var(--secondary), 0 0 30px var(--secondary);
+}
+
+.stickman .head .eye.left { display: none; }
+.stickman .head .nose, .stickman .head .mouth, .stickman .head .ear { display: none; } /* Hide old stickman face parts */
 
 .stickman .torso {
-    width: 18px;
-    height: 135px;
-    background: #ffffff;
-    box-shadow: inset -5px -2px 10px rgba(0,0,0,0.3), 0 0 0 3px #111, 0 5px 15px rgba(0,0,0,0.8);
+    width: 32px;
+    height: 120px;
+    background: linear-gradient(to right, #1e293b, #475569, #1e293b);
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.9), 0 0 0 2px #0f172a, 0 10px 20px rgba(0,0,0,0.6);
     position: absolute;
-    left: 81px; /* Centered horizontally (180 - 18) / 2 */
-    top: 90px;
+    left: 74px; 
+    top: 80px;
     transform-origin: top center;
-    border-radius: 9px;
+    border-radius: 12px 12px 10px 10px;
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Belt/Core Glow */
+.stickman .torso::after {
+    content: '';
+    position: absolute;
+    bottom: 10px;
+    left: 2px;
+    width: 28px;
+    height: 8px;
+    background: var(--primary);
+    box-shadow: 0 0 10px var(--primary);
+    border-radius: 4px;
+}
+#stickman-p2 .torso::after {
+    background: var(--secondary);
+    box-shadow: 0 0 10px var(--secondary);
 }
 
 .stickman .arm {
-    width: 18px;
-    height: 135px;
-    background: #ffffff;
-    box-shadow: inset -5px -2px 10px rgba(0,0,0,0.3), 0 0 0 3px #111, 0 5px 15px rgba(0,0,0,0.8);
+    width: 24px;
+    height: 110px;
+    background: linear-gradient(to right, #334155, #64748b, #334155);
+    box-shadow: inset 0 -5px 10px rgba(0,0,0,0.8), 0 0 0 2px #0f172a;
     position: absolute;
-    top: 105px;
+    top: 90px;
     transform-origin: top center;
-    border-radius: 9px;
+    border-radius: 12px;
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .stickman .left-arm {
-    left: 81px;
-    transform: rotate(30deg); /* Back hand points down and away */
-    filter: brightness(0.6); /* Darker back arm for depth */
+    left: 78px;
+    transform: rotate(30deg); 
+    filter: brightness(0.5); /* Darker back arm for depth */
 }
 
 /* Glowing Sword attached to the right arm (front hand) */
 .stickman .right-arm::after {
     content: '';
     position: absolute;
-    top: 135px; /* Attached at the end of the arm */
-    left: 1.5px; /* Centered on 18px arm (18-15)/2 = 1.5 */
+    top: 100px; /* Attached near the end of the arm */
+    left: 4.5px; /* Centered on 24px arm (24-15)/2 = 4.5 */
     width: 15px;
-    height: 195px;
-    background: #e2e8f0;
+    height: 220px; /* Longer sword */
+    background: #ffffff;
     border-radius: 9px;
     transform-origin: top center;
     /* Point sword forward */
     transform: rotate(-50deg); 
-    box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary); /* Neon glow */
+    box-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary), inset 0 0 5px #fff; /* Neon glow */
 }
 
 /* Red glow for P2 sword */
@@ -485,31 +479,31 @@ input[type="text"]:focus {
 }
 
 .stickman .right-arm {
-    left: 81px;
+    left: 78px;
     transform: rotate(-40deg); /* Front hand raised slightly for balance */
     z-index: 10;
 }
 
 .stickman .leg {
-    width: 18px;
-    height: 135px;
-    background: #ffffff;
-    box-shadow: inset -5px -2px 10px rgba(0,0,0,0.3), 0 0 0 3px #111, 0 5px 15px rgba(0,0,0,0.8);
+    width: 26px;
+    height: 140px;
+    background: linear-gradient(to right, #1e293b, #475569, #1e293b);
+    box-shadow: inset 0 -5px 15px rgba(0,0,0,0.8), 0 0 0 2px #0f172a;
     position: absolute;
-    top: 225px;
+    top: 190px;
     transform-origin: top center;
-    border-radius: 9px;
+    border-radius: 13px;
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .stickman .left-leg {
-    left: 81px;
+    left: 77px;
     transform: rotate(30deg);
-    filter: brightness(0.6); /* Darker back leg for depth */
+    filter: brightness(0.5); /* Darker back leg for depth */
 }
 
 .stickman .right-leg {
-    left: 81px;
+    left: 77px;
     transform: rotate(-30deg);
 }
 
@@ -868,9 +862,27 @@ body.in-game .side-info {
 
 /* Media Queries for Responsiveness */
 @media (max-width: 768px) {
+    .split-layout {
+        flex-direction: column;
+    }
+    
+    .split-left {
+        flex: 1;
+        min-height: 40vh;
+        align-items: center;
+        padding-bottom: 20px;
+    }
+    
+    .split-right {
+        flex: 1;
+        padding: 20px 10px;
+        padding-top: 20px !important;
+        justify-content: flex-start;
+    }
+    
     .main-menu-panel {
         min-width: 90vw;
-        padding: 30px;
+        padding: 30px 15px;
     }
     .glitch {
         font-size: 2.5rem;
@@ -879,28 +891,79 @@ body.in-game .side-info {
         font-size: 2rem;
     }
     .battlefield {
-        height: 250px;
-        margin-top: 120px;
+        transform: scale(0.65);
+        transform-origin: center bottom;
+        height: auto;
+        padding-bottom: 50px;
     }
     .stickman {
-        transform: scale(0.6);
-        margin: 0 10px;
-        margin-bottom: -100px;
+        margin: 0 -20px;
+        margin-bottom: 0px;
     }
     .stickman.right {
-        transform: scaleX(-1) scale(0.6);
+        transform: scaleX(-1);
     }
+    
+    #mobile-top-controls {
+        position: relative !important;
+        top: 0 !important;
+        right: 0 !important;
+        margin-bottom: 10px;
+        justify-content: center;
+        width: 100%;
+    }
+    
+    #mobile-branding {
+        position: relative !important;
+        top: 0 !important;
+        transform: none !important;
+        font-size: 1.8rem !important;
+        margin-bottom: 15px;
+    }
+    
+    .game-header {
+        margin-bottom: 15px;
+    }
+    
+    #game-timer {
+        font-size: 2.5rem !important;
+        margin-bottom: 15px !important;
+        align-self: center !important;
+        margin-right: 0 !important;
+    }
+    
     .vs {
         font-size: 1.5rem;
     }
+    .word-display-container {
+        padding: 15px 20px;
+    }
     .word-display {
-        font-size: 1.5rem;
+        font-size: 1.5rem !important;
     }
     #typing-input {
-        font-size: 1.2rem;
-        padding: 10px;
+        font-size: 1.2rem !important;
+        padding: 12px !important;
+    }
+    #combo-counter {
+        font-size: 1.8rem !important;
+        padding: 5px 20px !important;
+        top: 0 !important;
     }
     .combat-text {
-        font-size: 2rem;
+        top: 10% !important;
+        font-size: 2rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .battlefield {
+        transform: scale(0.5);
+    }
+    .word-display-container {
+        padding: 10px 10px;
+    }
+    .word-display {
+        font-size: 1.2rem !important;
     }
 }
